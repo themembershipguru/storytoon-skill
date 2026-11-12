@@ -240,6 +240,54 @@ const EmojiCard: React.FC<{ q: PropSpec; ctx: PropCtx }> = ({ q, ctx }) => {
   );
 };
 
+/** Water with a sandy rim. Big enough water (6+ wide) gets waves: foam lines that roll in and
+ *  fade at the shore, a lighter shallow band, and slow sparkles. `waves: false` keeps it still. */
+const Pond: React.FC<{ q: PropSpec; ctx: PropCtx }> = ({ q, ctx }) => {
+  const r = (q.w ?? 4) / 2;
+  const water = col(q.color ?? "#5BB8E8");
+  const shallow = new THREE.Color(water).lerp(new THREE.Color("#FFFFFF"), 0.35).getStyle();
+  const flat = style().props === "flat";
+  const waves = q.waves !== false && r >= 3;
+  const period = 3.4; // seconds per wave, roughly the rhythm of a calm beach recording
+  const band = Math.min(3.2, r * 0.3); // how far from the shore the foam starts
+  const Mat: React.FC<{ c: string; o?: number }> = ({ c, o = 1 }) =>
+    flat ? <meshBasicMaterial color={c} transparent={o < 1} opacity={o} toneMapped={false} depthWrite={false} /> : <meshStandardMaterial color={c} transparent={o < 1} opacity={o} roughness={0.25} depthWrite={o >= 1} />;
+  const flatRot: [number, number, number] = [-Math.PI / 2, 0, 0];
+  return (
+    <>
+      <mesh rotation={flatRot} position={[0, 0.02, 0]}><circleGeometry args={[r + 0.2, 96]} /><meshStandardMaterial color={col("#D9C79A")} roughness={1} /></mesh>
+      <mesh rotation={flatRot} position={[0, 0.03, 0]} receiveShadow><circleGeometry args={[r, 96]} /><Mat c={water} /></mesh>
+      {waves ? (
+        <>
+          <mesh rotation={flatRot} position={[0, 0.034, 0]}><ringGeometry args={[r - band * 0.8, r, 128]} /><Mat c={shallow} o={0.55} /></mesh>
+          {[0, 1, 2, 3].map((k) => {
+            // each foam line travels from open water to the shore, swells, then thins out and fades
+            const ph = (ctx.t / period + k / 4) % 1;
+            const inner = r - band + ph * (band + 0.05);
+            const width = 0.08 + Math.sin(ph * Math.PI) * 0.26;
+            const o = Math.sin(Math.min(1, ph * 1.15) * Math.PI) * 0.9;
+            if (o <= 0.02 || inner + width > r + 0.25) return null;
+            return <mesh key={k} rotation={flatRot} position={[0, 0.038 + k * 0.001, 0]}><ringGeometry args={[inner, inner + width, 160]} /><Mat c="#FFFFFF" o={o} /></mesh>;
+          })}
+          {[0, 1].map((k) => {
+            // the wash: a thin film of water that runs up the sand and slips back
+            const ph = (ctx.t / period + 0.15 + k / 2) % 1;
+            const reach = Math.sin(ph * Math.PI) * 0.35;
+            return <mesh key={`w${k}`} rotation={flatRot} position={[0, 0.026, 0]}><ringGeometry args={[r - 0.05, r + 0.05 + reach, 160]} /><Mat c={shallow} o={0.5 * Math.sin(ph * Math.PI)} /></mesh>;
+          })}
+          {Array.from({ length: 14 }).map((_, k) => {
+            // small sparkles out on the water
+            const a = k * 2.399;
+            const d = r * (0.25 + ((k * 37) % 60) / 100);
+            const tw = Math.max(0, Math.sin(ctx.t * 2.2 + k * 1.7));
+            return tw > 0.2 ? <mesh key={`s${k}`} rotation={flatRot} position={[Math.cos(a) * d, 0.036, Math.sin(a) * d]}><planeGeometry args={[0.5 * tw, 0.06]} /><Mat c="#FFFFFF" o={0.7 * tw} /></mesh> : null;
+          })}
+        </>
+      ) : null}
+    </>
+  );
+};
+
 const one = (q: PropSpec, ctx: PropCtx): React.ReactNode => {
   switch (q.type) {
     case "house": return <House q={q} />;
@@ -260,7 +308,7 @@ const one = (q: PropSpec, ctx: PropCtx): React.ReactNode => {
     case "sign": return <Sign q={q} ctx={ctx} />;
     case "field": return <><Flat w={q.w ?? 6} d={q.d ?? 6} c={q.color ?? "#9A6B3F"} />{Array.from({ length: Math.floor((q.w ?? 6) / 0.8) }).map((_, i) => <mesh key={i} position={[-(q.w ?? 6) / 2 + 0.4 + i * 0.8, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.28, (q.d ?? 6) * 0.94]} /><meshStandardMaterial color={col(q.color2 ?? "#6FBF4A")} roughness={1} /></mesh>)}</>;
     case "road": return <Flat w={q.w ?? 4} d={q.d ?? 40} c={q.color ?? "#B9B2A3"} y={0.015} />;
-    case "pond": return <><mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}><circleGeometry args={[(q.w ?? 4) / 2 + 0.2, 32]} /><meshStandardMaterial color={col("#D9C79A")} roughness={1} /></mesh><mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}><circleGeometry args={[(q.w ?? 4) / 2, 32]} /><meshStandardMaterial color={col(q.color ?? "#5BB8E8")} roughness={0.3} /></mesh></>;
+    case "pond": return <Pond q={q} ctx={ctx} />;
     case "mountain": return <><mesh position={[0, (q.h ?? 22) / 2, 0]}><coneGeometry args={[q.w ?? 18, q.h ?? 22, 6]} /><Toon c={q.color ?? "#8FA3B8"} /></mesh><mesh position={[0, (q.h ?? 22) * 0.86, 0]}><coneGeometry args={[(q.w ?? 18) * 0.29, (q.h ?? 22) * 0.29, 6]} /><Toon c="#FFFFFF" /></mesh></>;
     case "block": return <Box s={[q.w ?? 1, q.h ?? 1, q.d ?? 1]} p={[0, (q.h ?? 1) / 2, 0]} c={q.color ?? "#D9D2C5"} />;
     case "ball": return <Shape geo={<sphereGeometry args={[(q.w ?? 1) / 2, 24, 16]} />} c={q.color ?? "#E2574C"} p={[0, (q.w ?? 1) / 2, 0]} o={0.04} />;

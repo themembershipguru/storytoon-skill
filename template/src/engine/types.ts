@@ -50,6 +50,7 @@ export type PropSpec = {
   lines?: string[];
   emoji?: string;
   float?: boolean;
+  waves?: boolean; // pond: false keeps the water still
   enter?: number;
   scatter?: { count: number; area: [number, number, number, number]; seed?: number };
 };

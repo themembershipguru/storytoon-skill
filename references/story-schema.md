@@ -113,7 +113,7 @@ Every prop takes `at`, and optionally `rot` (degrees), `scale`, `color`, `y` (he
 | `sign` | wooden signpost | `text` |
 | `field` | farm plot with rows | `w`, `d`, `color` soil, `color2` crop |
 | `road` | flat strip | `w`, `d`, `color`, `rot` |
-| `pond` | | `w`, `color` |
+| `pond` | water with a sandy rim. 6 or wider gets rolling waves, foam and sparkles; pair it with a waves `ambience` | `w`, `color`, `waves: false` for still water |
 | `block`, `ball`, `pillar` | plain shapes for anything else | `w`, `h`, `d`, `color` |
 | `emoji` | any emoji or short word as a standing card | `emoji: "🐄"`, `float: true` to hover, `y` |
 
