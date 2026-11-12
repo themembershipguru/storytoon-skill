@@ -58,6 +58,7 @@ Read `references/story-schema.md` for every field, prop, face and camera shot. T
 
 What matters most:
 
+- **Watermark**: if the user has a channel or brand name, set `"watermark"` to it (see the schema). Ask once; remember the answer for their later videos.
 - **Style**: set `"style"` at the top. Ask the user which look they want if they have not said, and offer the built-in ones from `references/styles.md` by name, with the "good for" hint. If they describe a look of their own, build it as a named custom style (see `references/styles.md`) and show them stills before the full film.
 - **Cast**: 2 to 4 characters, each with a clearly different outfit colour and head (hair, hat, glasses, beard), so the viewer can tell them apart at phone size.
 - **Sets**: put the scenery every scene shares into `sets` once and reuse it by name. Add scene-specific props in the scene.

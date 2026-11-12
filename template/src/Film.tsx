@@ -62,6 +62,20 @@ const Captions: React.FC<{ slot: Slot; t: number; story: Story; st: StyleSpec }>
   );
 };
 
+/** Small channel name kept on screen the whole time, inside the safe area (clear of the app's buttons). */
+const Watermark: React.FC<{ story: Story; st: StyleSpec }> = ({ story, st }) => {
+  const w = story.watermark;
+  if (!w) return null;
+  const spec = typeof w === "string" ? { text: w } : w;
+  const pos = spec.position ?? "top-left";
+  const place: React.CSSProperties = pos === "top-right" ? { top: 92, right: 64 } : pos === "bottom-left" ? { bottom: 330, left: 64 } : { top: 92, left: 64 };
+  return (
+    <div style={{ position: "absolute", ...place, opacity: spec.opacity ?? 0.7, fontFamily: fontOf(st), fontWeight: weightOf(st), fontSize: 38 * (st.captions.font === "pixel" ? 0.6 : 1), letterSpacing: 1, color: st.captions.color, textTransform: st.captions.uppercase ? "uppercase" : "none", ...stroke(8, st.captions.stroke) }}>
+      {spec.text}
+    </div>
+  );
+};
+
 const Title: React.FC<{ text: string; t: number; st: StyleSpec }> = ({ text, t, st }) => {
   const k = pop((t - 0.1) / 0.3);
   if (k <= 0) return null;
@@ -144,6 +158,7 @@ export const Film: React.FC<{ story: Story; timing: Timing; sounds?: Sounds; sty
       {st.post.grain > 0 ? <AbsoluteFill style={{ backgroundImage: GRAIN, opacity: st.post.grain, mixBlendMode: "multiply" }} /> : null}
       {st.post.halftone > 0 ? <AbsoluteFill style={{ backgroundImage: "radial-gradient(circle, rgba(20,20,20,0.9) 1.3px, transparent 1.9px)", backgroundSize: "9px 9px", opacity: st.post.halftone, mixBlendMode: "multiply" }} /> : null}
       {st.post.vignette > 0 ? <AbsoluteFill style={{ background: `radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,${st.post.vignette}) 100%)` }} /> : null}
+      <Watermark story={story} st={st} />
       {scene.title ? <Title text={scene.title} t={t} st={st} /> : null}
       <Captions slot={slot} t={t} story={story} st={st} />
       {flash > 0 ? <AbsoluteFill style={{ backgroundColor: "#FFFFFF", opacity: flash * 0.85 }} /> : null}

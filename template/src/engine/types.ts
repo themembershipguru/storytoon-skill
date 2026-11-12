@@ -94,6 +94,7 @@ export type Story = {
   rate?: string;
   pitch?: string;
   music?: false | string | { q: string; vol?: number; pick?: number }; // background music search, or false for none
+  watermark?: string | { text: string; position?: "top-left" | "top-right" | "bottom-left"; opacity?: number }; // channel name kept on screen
   autoSfx?: boolean; // false: only the sound effects you list
   captions?: { y?: number; size?: number; highlight?: string; maxWords?: number };
   cast: Record<string, CastSpec>;
