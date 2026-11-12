@@ -16,15 +16,35 @@ export const Toon: React.FC<{ c: string }> = ({ c }) => {
   if (kind === "matte") return <meshLambertMaterial color={color} />;
   if (kind === "flat") return <meshBasicMaterial color={color} toneMapped={false} />;
   if (kind === "faceted") return <meshStandardMaterial color={color} flatShading roughness={0.85} />;
+  if (kind === "soft") return <meshStandardMaterial color={color} roughness={style().roughness} />;
+  if (kind === "plastic") return <meshStandardMaterial color={color} roughness={0.3} />;
   return <meshToonMaterial color={color} />;
 };
 const Ink = () => <meshBasicMaterial color={style().ink} side={THREE.BackSide} toneMapped={false} />;
 const ok = (o: number) => o * style().outline;
 
 /** Box with an exact-width outline. */
+/** Toy-brick studs on top of a block (bricks style). */
+const Studs: React.FC<{ s: V3; c: string }> = ({ s, c }) => {
+  const nx = Math.min(8, Math.floor(s[0] / 0.36));
+  const nz = Math.min(8, Math.floor(s[2] / 0.36));
+  if (nx < 1 || nz < 1 || s[1] < 0.06) return null;
+  const items: React.ReactNode[] = [];
+  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
+    items.push(
+      <mesh key={`${i}-${j}`} position={[(i - (nx - 1) / 2) * (s[0] / nx), s[1] / 2 + 0.035, (j - (nz - 1) / 2) * (s[2] / nz)]} castShadow>
+        <cylinderGeometry args={[0.1, 0.1, 0.07, 16]} />
+        <Toon c={c} />
+      </mesh>,
+    );
+  }
+  return <>{items}</>;
+};
+
 export const Box: React.FC<{ s: V3; p?: V3; r?: V3; c: string; o?: number }> = ({ s, p = [0, 0, 0], r = [0, 0, 0], c, o = 0.045 }) => (
   <group position={p} rotation={r}>
     <mesh castShadow receiveShadow><boxGeometry args={s} /><Toon c={c} /></mesh>
+    {style().studs ? <Studs s={s} c={c} /> : null}
     {ok(o) > 0 ? <mesh><boxGeometry args={[s[0] + ok(o) * 2, s[1] + ok(o) * 2, s[2] + ok(o) * 2]} /><Ink /></mesh> : null}
   </group>
 );

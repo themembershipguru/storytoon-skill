@@ -39,11 +39,11 @@ The first run copies the project next to you and does an `npm install`, so give 
 
 Videos come out at 80 to 90 seconds unless you ask for shorter. 90 is the ceiling.
 
-## Five looks, or make your own
+## Fourteen looks, or make your own
 
 ![the same scene in five styles](docs/styles.jpg)
 
-Same story, one word changed: `toon`, `paper`, `whiteboard`, `lowpoly`, `pixel`.
+Same story, one word changed. Top row: `toon`, `paper`, `whiteboard`, `lineart`, `chalkboard`, `gold`, `comic`. Bottom row: `flatvector`, `pixel`, `ps2`, `lowpoly`, `cgi`, `clay`, `bricks`.
 
 ```json
 "style": "whiteboard"

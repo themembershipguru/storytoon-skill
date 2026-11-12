@@ -4,6 +4,8 @@ import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from "remo
 import { loadFont } from "@remotion/google-fonts/Baloo2";
 import { loadFont as loadMarker } from "@remotion/google-fonts/PatrickHand";
 import { loadFont as loadPixel } from "@remotion/google-fonts/PressStart2P";
+import { loadFont as loadComic } from "@remotion/google-fonts/Bangers";
+import { loadFont as loadSerif } from "@remotion/google-fonts/Cinzel";
 import { resolveStyle, type StyleSpec } from "./engine/style";
 import { World } from "./engine/World";
 import { buildSlots, FPS, slotAt, type Slot } from "./engine/timing";
@@ -12,8 +14,12 @@ import type { Story, Timing, Word } from "./engine/types";
 const { fontFamily } = loadFont("normal", { weights: ["800"], subsets: ["latin", "devanagari"] });
 const marker = loadMarker("normal", { weights: ["400"], subsets: ["latin"] }).fontFamily;
 const pixelFont = loadPixel("normal", { weights: ["400"], subsets: ["latin"] }).fontFamily;
+const comicFont = loadComic("normal", { weights: ["400"], subsets: ["latin"] }).fontFamily;
+const serifFont = loadSerif("normal", { weights: ["700"], subsets: ["latin"] }).fontFamily;
 // the round font is always the fallback, so Hindi still renders in every style
-const fontOf = (st: StyleSpec) => (st.captions.font === "marker" ? `${marker}, ${fontFamily}` : st.captions.font === "pixel" ? `${pixelFont}, ${fontFamily}` : fontFamily);
+const FONTS: Record<string, string> = { marker, pixel: pixelFont, comic: comicFont, serif: serifFont };
+const fontOf = (st: StyleSpec) => (FONTS[st.captions.font] ? `${FONTS[st.captions.font]}, ${fontFamily}` : fontFamily);
+const weightOf = (st: StyleSpec) => (st.captions.font === "round" ? 800 : st.captions.font === "serif" ? 700 : 400);
 const GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.28  0 0 0 0 0.2  0 0 0 0.5 0"/></filter><rect width="400" height="400" filter="url(#n)"/></svg>')}")`;
 
 const pop = (x: number) => {
@@ -49,7 +55,7 @@ const Captions: React.FC<{ slot: Slot; t: number; story: Story; st: StyleSpec }>
   const k = pop((t - current.start + 0.03) / 0.14);
   return (
     <div style={{ position: "absolute", left: 70, right: 70, top: `${(cfg.y ?? 0.68) * 100}%`, display: "flex", justifyContent: "center", transform: `scale(${0.82 + k * 0.18})` }}>
-      <div style={{ fontFamily: fontOf(st), fontWeight: cs.font === "round" ? 800 : 400, fontSize: (cfg.size ?? 84) * cs.size, lineHeight: sharp ? 1.35 : 1.1, textAlign: "center", color: cs.color, textTransform: cs.uppercase ? "uppercase" : "none", textShadow: sharp ? "6px 6px 0 rgba(0,0,0,0.6)" : cs.color === "#FFFFFF" || cs.color === "#FFFDF6" ? "0 8px 0 rgba(0,0,0,0.28)" : "none", ...stroke(sharp ? 12 : 16, cs.stroke) }}>
+      <div style={{ fontFamily: fontOf(st), fontWeight: weightOf(st), fontSize: (cfg.size ?? 84) * cs.size, lineHeight: sharp ? 1.35 : 1.1, textAlign: "center", color: cs.color, textTransform: cs.uppercase ? "uppercase" : "none", textShadow: sharp ? "6px 6px 0 rgba(0,0,0,0.6)" : cs.color === "#FFFFFF" || cs.color === "#FFFDF6" ? "0 8px 0 rgba(0,0,0,0.28)" : "none", ...(cs.box ? { background: cs.box, border: `7px solid ${cs.stroke}`, borderRadius: 6, padding: "6px 26px 2px", boxShadow: "10px 10px 0 rgba(0,0,0,0.85)", transform: "rotate(-2deg)", textShadow: "none" } : stroke(sharp ? 12 : 16, cs.stroke)) }}>
         {current.words.map((w, i) => <span key={i} style={{ color: w.hl ? cfg.highlight ?? cs.highlight : cs.color }}>{i ? " " : ""}{w.w}</span>)}
       </div>
     </div>
@@ -61,7 +67,7 @@ const Title: React.FC<{ text: string; t: number; st: StyleSpec }> = ({ text, t, 
   if (k <= 0) return null;
   return (
     <div style={{ position: "absolute", left: 60, right: 60, top: "11%", display: "flex", justifyContent: "center", transform: `scale(${k}) rotate(-2deg)` }}>
-      <div style={{ fontFamily: fontOf(st), fontWeight: st.captions.font === "round" ? 800 : 400, fontSize: (text.length > 16 ? 104 : 136) * st.captions.size, lineHeight: 1.1, textAlign: "center", color: st.titleColor, textShadow: st.captions.font === "marker" ? "none" : "0 12px 0 rgba(0,0,0,0.3)", ...stroke(st.captions.font === "pixel" ? 14 : 22, st.captions.stroke) }}>{text}</div>
+      <div style={{ fontFamily: fontOf(st), fontWeight: weightOf(st), fontSize: (text.length > 16 ? 104 : 136) * st.captions.size, lineHeight: 1.1, textAlign: "center", color: st.titleColor, textShadow: st.captions.font === "marker" ? "none" : "0 12px 0 rgba(0,0,0,0.3)", ...stroke(st.captions.font === "pixel" ? 14 : 22, st.captions.stroke) }}>{text}</div>
     </div>
   );
 };
@@ -101,6 +107,7 @@ export const Film: React.FC<{ story: Story; timing: Timing; styleOverride?: stri
         <World story={story} scene={scene} t={t} dur={slot.dur} speaking={speaking} seed={slot.index} styleName={styleOverride} />
       </AbsoluteFill>
       {st.post.grain > 0 ? <AbsoluteFill style={{ backgroundImage: GRAIN, opacity: st.post.grain, mixBlendMode: "multiply" }} /> : null}
+      {st.post.halftone > 0 ? <AbsoluteFill style={{ backgroundImage: "radial-gradient(circle, rgba(20,20,20,0.9) 1.3px, transparent 1.9px)", backgroundSize: "9px 9px", opacity: st.post.halftone, mixBlendMode: "multiply" }} /> : null}
       {st.post.vignette > 0 ? <AbsoluteFill style={{ background: `radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,${st.post.vignette}) 100%)` }} /> : null}
       {scene.title ? <Title text={scene.title} t={t} st={st} /> : null}
       <Captions slot={slot} t={t} story={story} st={st} />

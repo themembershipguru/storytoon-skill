@@ -3,7 +3,7 @@ import React from "react";
 import * as THREE from "three";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { getCloud, getEmoji, getGround, getSky, getSprite, SPRITE_ASPECT } from "./characters";
+import { getCloud, getEmoji, getGround, getSky, getSprite, getStuds, SPRITE_ASPECT } from "./characters";
 import { PropView, Toon, type PropCtx } from "./Props";
 import { HAND, LowPolyBody } from "./LowPoly";
 import { col, GROUND_COLOR, resolveStyle, setStyle, style } from "./style";
@@ -108,7 +108,7 @@ const Actor: React.FC<{ a: ActorSpec; story: Story; t: number; p: number; speaki
   const blink = (t * 30 + hash(a.who) * 13) % 96 < 4;
   const face = a.face ?? DEFAULT_FACE[act] ?? "neutral";
   const pose = a.pose ?? DEFAULT_POSE[act] ?? (a.hold ? "hold" : "down");
-  const solid = style().characters === "lowpoly";
+  const solid = ["lowpoly", "smooth", "brick"].includes(style().characters);
   const sprite = solid ? null : getSprite(a.who, spec, { face, pose, mouth, blink, hold: a.hold });
   const held = solid && a.hold ? getEmoji(a.hold) : null;
   const h = size, w = size * SPRITE_ASPECT;
@@ -217,7 +217,7 @@ export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: n
       {time === "night" ? <mesh position={[-40, 60, -160]}><circleGeometry args={[9, 32]} /><meshBasicMaterial color="#F4F1D8" fog={false} toneMapped={false} /></mesh> : null}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[360, 360]} />
-        {st.ground === "plain" ? (st.props === "flat" ? <meshBasicMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} toneMapped={false} /> : <meshStandardMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} roughness={1} />) : <meshStandardMaterial map={getGround(ground)} roughness={1} />}
+        {st.ground === "studs" ? <meshStandardMaterial map={getStuds(st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A"))} roughness={0.35} /> : st.ground === "plain" ? (st.props === "flat" ? <meshBasicMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} toneMapped={false} /> : <meshStandardMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} roughness={1} />) : <meshStandardMaterial map={getGround(ground)} roughness={1} />}
       </mesh>
       {props.map((q, i) => <PropView key={`${scene.set ?? ""}-${i}-${q.type}`} q={q} ctx={ctx} />)}
       {(scene.actors ?? []).map((a, i) => <Actor key={`${a.who}-${i}`} a={a} story={story} t={t} p={p} speaking={speaking} yawAt={yawAt} leanAt={leanAt} tint={look.tint} index={i} />)}

@@ -1,4 +1,4 @@
-// A style is a bundle of drawing settings. Five are built in; you can invent more in
+// A style is a bundle of drawing settings. Fourteen are built in; you can invent more in
 // styles/custom.json (or inside a story under "styles") by naming one, picking a `base`,
 // and overriding any field below. See references/styles.md.
 import * as THREE from "three";
@@ -8,17 +8,24 @@ import type { Story, TimeOfDay } from "./types";
 export type StyleSpec = {
   base?: string;
   /** How people are drawn. outline: ink-lined cartoon. paper: cut paper with white edges.
-   *  sketch: marker drawing, white fill. lowpoly: real 3D bodies. */
-  characters: "outline" | "paper" | "sketch" | "lowpoly";
+   *  sketch: line drawing filled with `sketchFill`. lowpoly / smooth / brick: real 3D bodies
+   *  (faceted, smooth like clay or CGI, or blocky toy figures). */
+  characters: "outline" | "paper" | "sketch" | "lowpoly" | "smooth" | "brick";
   ink: string; // line colour for characters and prop outlines
+  features?: string; // colour of eyes, mouths and brows (default: ink)
+  sketchFill?: string; // sketch characters: skin/face fill (default white)
+  sketchHair?: string; // sketch characters: hair fill
   line: number; // character line thickness, 1 = normal
-  /** How 3D props are shaded. toon: two-tone cartoon. matte: soft paper. flat: no shading. faceted: low-poly. */
-  props: "toon" | "matte" | "flat" | "faceted";
+  /** How 3D props are shaded. toon: two-tone cartoon. matte: soft paper. flat: no shading.
+   *  faceted: low-poly. soft: smooth 3D. plastic: shiny toy plastic. */
+  props: "toon" | "matte" | "flat" | "faceted" | "soft" | "plastic";
+  roughness: number; // smooth 3D surfaces: 0.2 glossy, 1 dull clay
+  studs: boolean; // toy-brick studs on blocks
   outline: number; // prop outline thickness, 0 = none
   shadows: boolean;
   /** Every colour in the film is pushed towards `mix` by `amount` (0..1) and its saturation scaled. */
   colors: { mix: string; amount: number; saturation: number };
-  ground: "textured" | "plain";
+  ground: "textured" | "plain" | "studs";
   groundColor?: string; // one colour for every ground type (plain ground only)
   sky?: Partial<Record<TimeOfDay, [string, string]>>; // [top, horizon] per time of day
   evenLight: boolean; // true: sunset and night do not tint the characters
@@ -26,8 +33,8 @@ export type StyleSpec = {
   clouds: boolean;
   pixel: number; // 0 = off; 6 = each "pixel" is 6x6 real pixels
   posterize: number; // 0 = off; 5 = only 5 levels per colour channel (retro palettes)
-  post: { saturate: number; contrast: number; grain: number; vignette: number };
-  captions: { font: "round" | "marker" | "pixel"; color: string; stroke: string; highlight: string; size: number; uppercase: boolean };
+  post: { saturate: number; contrast: number; grain: number; vignette: number; halftone: number };
+  captions: { font: "round" | "marker" | "pixel" | "comic" | "serif"; color: string; stroke: string; highlight: string; size: number; uppercase: boolean; box?: string };
   titleColor: string;
 };
 
@@ -36,6 +43,8 @@ const toon: StyleSpec = {
   ink: "#1E1A17",
   line: 1,
   props: "toon",
+  roughness: 0.6,
+  studs: false,
   outline: 1,
   shadows: true,
   colors: { mix: "#FFFFFF", amount: 0, saturation: 1 },
@@ -45,10 +54,12 @@ const toon: StyleSpec = {
   clouds: true,
   pixel: 0,
   posterize: 0,
-  post: { saturate: 1, contrast: 1, grain: 0, vignette: 0.26 },
+  post: { saturate: 1, contrast: 1, grain: 0, vignette: 0.26, halftone: 0 },
   captions: { font: "round", color: "#FFFFFF", stroke: "#14110F", highlight: "#FFD23F", size: 1, uppercase: false },
   titleColor: "#FFD23F",
 };
+
+const p = (o: Partial<StyleSpec["post"]>) => ({ ...toon.post, ...o });
 
 export const BUILTIN: Record<string, StyleSpec> = {
   toon,
@@ -63,7 +74,7 @@ export const BUILTIN: Record<string, StyleSpec> = {
     ground: "plain",
     sky: { day: ["#9CCBE8", "#F4E9D4"], sunset: ["#E58F6B", "#F7D9A8"], night: ["#27305C", "#5A5F96"] },
     fog: true,
-    post: { saturate: 0.95, contrast: 1, grain: 0.5, vignette: 0.2 },
+    post: p({ saturate: 0.95, grain: 0.5, vignette: 0.2 }),
     captions: { font: "round", color: "#FFFDF6", stroke: "#3A2F28", highlight: "#FFC94A", size: 1, uppercase: false },
     titleColor: "#FFC94A",
   },
@@ -82,7 +93,7 @@ export const BUILTIN: Record<string, StyleSpec> = {
     evenLight: true,
     fog: false,
     clouds: false,
-    post: { saturate: 1, contrast: 1.04, grain: 0, vignette: 0.08 },
+    post: p({ contrast: 1.04, vignette: 0.08 }),
     captions: { font: "marker", color: "#1B1B1F", stroke: "#FFFFFF", highlight: "#E23D3D", size: 1.25, uppercase: false },
     titleColor: "#E23D3D",
   },
@@ -94,7 +105,7 @@ export const BUILTIN: Record<string, StyleSpec> = {
     colors: { mix: "#FFFFFF", amount: 0.04, saturation: 1.08 },
     ground: "plain",
     sky: { day: ["#4FA4F0", "#D8F0FF"], sunset: ["#6A4FB0", "#FFB37A"], night: ["#0A1030", "#2C3F7A"] },
-    post: { saturate: 1.08, contrast: 1.05, grain: 0, vignette: 0.3 },
+    post: p({ saturate: 1.08, contrast: 1.05, vignette: 0.3 }),
   },
   pixel: {
     ...toon,
@@ -105,9 +116,146 @@ export const BUILTIN: Record<string, StyleSpec> = {
     fog: false,
     pixel: 6,
     posterize: 9,
-    post: { saturate: 1, contrast: 1.04, grain: 0, vignette: 0 },
+    post: p({ contrast: 1.04, vignette: 0 }),
     captions: { font: "pixel", color: "#FFFFFF", stroke: "#000000", highlight: "#FFE14A", size: 0.6, uppercase: true },
     titleColor: "#FFE14A",
+  },
+  chalkboard: {
+    ...toon,
+    characters: "sketch",
+    ink: "#F2EFE6",
+    sketchFill: "#2F4A3E",
+    sketchHair: "rgba(242,239,230,0.55)",
+    line: 0.95,
+    props: "flat",
+    outline: 1.15,
+    shadows: false,
+    colors: { mix: "#2F4A3E", amount: 0.55, saturation: 0.8 },
+    ground: "plain",
+    groundColor: "#2B4438",
+    sky: { day: ["#25392F", "#2F4A3E"], sunset: ["#25392F", "#2F4A3E"], night: ["#1D2D25", "#26392F"] },
+    evenLight: true,
+    fog: false,
+    clouds: false,
+    post: p({ grain: 0.25, vignette: 0.35 }),
+    captions: { font: "marker", color: "#F2EFE6", stroke: "#2F4A3E", highlight: "#FFE066", size: 1.25, uppercase: false },
+    titleColor: "#FFE066",
+  },
+  lineart: {
+    ...toon,
+    characters: "sketch",
+    ink: "#141414",
+    sketchHair: "#FFFFFF",
+    line: 0.8,
+    props: "flat",
+    outline: 1,
+    shadows: false,
+    colors: { mix: "#FFFFFF", amount: 1, saturation: 0 },
+    ground: "plain",
+    groundColor: "#FBFAF6",
+    sky: { day: ["#FBFAF6", "#FBFAF6"], sunset: ["#FBFAF6", "#FBFAF6"], night: ["#EDEDED", "#F5F5F2"] },
+    evenLight: true,
+    fog: false,
+    clouds: false,
+    post: p({ saturate: 0, vignette: 0.05 }),
+    captions: { font: "marker", color: "#141414", stroke: "#FBFAF6", highlight: "#141414", size: 1.25, uppercase: true },
+    titleColor: "#141414",
+  },
+  gold: {
+    ...toon,
+    characters: "sketch",
+    ink: "#E3B85C",
+    sketchFill: "#121A2E",
+    sketchHair: "#1B2540",
+    line: 0.8,
+    props: "flat",
+    outline: 1,
+    shadows: false,
+    colors: { mix: "#121A2E", amount: 0.86, saturation: 0.6 },
+    ground: "plain",
+    groundColor: "#0F1627",
+    sky: { day: ["#0A0F1C", "#18223B"], sunset: ["#0A0F1C", "#2A2433"], night: ["#05080F", "#121A2E"] },
+    evenLight: true,
+    fog: false,
+    clouds: false,
+    post: p({ vignette: 0.45 }),
+    captions: { font: "serif", color: "#E3B85C", stroke: "#0A0F1C", highlight: "#FFF1CC", size: 0.92, uppercase: true },
+    titleColor: "#E3B85C",
+  },
+  comic: {
+    ...toon,
+    line: 1.6,
+    outline: 1.6,
+    colors: { mix: "#FFFFFF", amount: 0, saturation: 1.3 },
+    ground: "plain",
+    sky: { day: ["#3FA9F5", "#BDE6FF"], sunset: ["#FF6A3D", "#FFD23F"], night: ["#1A1240", "#4A2C8A"] },
+    fog: false,
+    post: p({ saturate: 1.15, contrast: 1.1, vignette: 0, halftone: 0.3 }),
+    captions: { font: "comic", color: "#141414", stroke: "#141414", highlight: "#E8262D", size: 1.05, uppercase: true, box: "#FFE14A" },
+    titleColor: "#E8262D",
+  },
+  flatvector: {
+    ...toon,
+    ink: "rgba(0,0,0,0)",
+    features: "#2B2622",
+    outline: 0,
+    shadows: false,
+    colors: { mix: "#FFFFFF", amount: 0.04, saturation: 1.05 },
+    ground: "plain",
+    sky: { day: ["#7CC8F2", "#DDF2FC"], sunset: ["#F28B6B", "#FFD7A1"], night: ["#24305E", "#4C5C9A"] },
+    evenLight: true,
+    fog: false,
+    post: p({ vignette: 0 }),
+    captions: { font: "round", color: "#FFFFFF", stroke: "#2B2622", highlight: "#FFC93C", size: 1, uppercase: false },
+    titleColor: "#FFC93C",
+  },
+  ps2: {
+    ...toon,
+    characters: "lowpoly",
+    props: "faceted",
+    outline: 0,
+    colors: { mix: "#B8C4C8", amount: 0.08, saturation: 0.82 },
+    ground: "textured",
+    sky: { day: ["#6F9CC4", "#C9D8E0"], sunset: ["#5E4B7A", "#D99A6C"], night: ["#0C1226", "#2A3556"] },
+    fog: true,
+    pixel: 3,
+    post: p({ saturate: 0.9, contrast: 1.08, grain: 0.18, vignette: 0.35 }),
+  },
+  cgi: {
+    ...toon,
+    characters: "smooth",
+    props: "soft",
+    roughness: 0.42,
+    outline: 0,
+    colors: { mix: "#FFFFFF", amount: 0.02, saturation: 1.05 },
+    ground: "plain",
+    sky: { day: ["#4E9BE6", "#D9EEFF"], sunset: ["#5B4FA8", "#FFB27A"], night: ["#0A1030", "#2C3F7A"] },
+    post: p({ saturate: 1.06, contrast: 1.06, vignette: 0.32 }),
+  },
+  clay: {
+    ...toon,
+    characters: "smooth",
+    props: "soft",
+    roughness: 1,
+    outline: 0,
+    colors: { mix: "#FFF4E8", amount: 0.07, saturation: 0.95 },
+    ground: "plain",
+    sky: { day: ["#B7D6F0", "#F6EEE4"], sunset: ["#E6A38C", "#F8DDBE"], night: ["#3B4170", "#6E739E"] },
+    post: p({ saturate: 1.02, contrast: 1.05, grain: 0.25, vignette: 0.22 }),
+    fog: false,
+    captions: { font: "round", color: "#FFFDF8", stroke: "#5A4636", highlight: "#FFB547", size: 1, uppercase: false },
+    titleColor: "#FFB547",
+  },
+  bricks: {
+    ...toon,
+    characters: "brick",
+    props: "plastic",
+    studs: true,
+    outline: 0,
+    colors: { mix: "#FFFFFF", amount: 0, saturation: 1.2 },
+    ground: "studs",
+    sky: { day: ["#3E9BEA", "#CFEAFF"], sunset: ["#6A4FB0", "#FFB37A"], night: ["#0A1030", "#2C3F7A"] },
+    post: p({ saturate: 1.08, contrast: 1.04, vignette: 0.28 }),
   },
 };
 

@@ -1,6 +1,6 @@
 ---
 name: storytoon
-description: Make a viral-style animated story reel (vertical 9:16, 80-90 s, never over 90) where hand-drawn 2D cartoon characters act in a 3D world, with a narrator voice and word-by-word captions. Use when the user asks for a cartoon story video, an animated parable or moral story, a "2D characters in 3D world" explainer, a rich-vs-poor style lesson reel, or says things like "make a story reel about X" / "X par animated kahani banao". It can also research which short videos already have a million views in a niche (yt-dlp) and turn those patterns into original ideas. Five visual styles are built in (toon, paper cutout, whiteboard, low-poly 3D, pixel retro) and the user can invent and name their own. Everything is drawn in code (no image generation, no paid API): the user gives a topic, you write the story, fill one JSON file, and render an mp4.
+description: Make a viral-style animated story reel (vertical 9:16, 80-90 s, never over 90) where hand-drawn 2D cartoon characters act in a 3D world, with a narrator voice and word-by-word captions. Use when the user asks for a cartoon story video, an animated parable or moral story, a "2D characters in 3D world" explainer, a rich-vs-poor style lesson reel, or says things like "make a story reel about X" / "X par animated kahani banao". It can also research which short videos already have a million views in a niche (yt-dlp) and turn those patterns into original ideas. Fourteen visual styles are built in (toon, paper cutout, whiteboard, line art, chalkboard, gold line art, comic book, flat vector, pixel art, PS2-era 3D, low-poly 3D, smooth CGI, clay, toy bricks) and the user can invent and name their own. Everything is drawn in code (no image generation, no paid API): the user gives a topic, you write the story, fill one JSON file, and render an mp4.
 ---
 
 # Storytoon: 2D characters, 3D world, one JSON file
@@ -58,7 +58,7 @@ Read `references/story-schema.md` for every field, prop, face and camera shot. T
 
 What matters most:
 
-- **Style**: set `"style"` at the top. Ask the user which look they want if they have not said, and offer the five built-in ones by name. If they describe a look of their own, build it as a named custom style (see `references/styles.md`) and show them stills before the full film.
+- **Style**: set `"style"` at the top. Ask the user which look they want if they have not said, and offer the built-in ones from `references/styles.md` by name, with the "good for" hint. If they describe a look of their own, build it as a named custom style (see `references/styles.md`) and show them stills before the full film.
 - **Cast**: 2 to 4 characters, each with a clearly different outfit colour and head (hair, hat, glasses, beard), so the viewer can tell them apart at phone size.
 - **Sets**: put the scenery every scene shares into `sets` once and reuse it by name. Add scene-specific props in the scene.
 - **The frame is narrow.** A medium shot shows about 4.5 units of width at the actors; keep people who must be seen together within 3 units of each other, or use a wide shot or a bigger `zoom`.

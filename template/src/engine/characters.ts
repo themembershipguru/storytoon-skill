@@ -333,9 +333,9 @@ const mirror = (pts: number[][]) => pts.map(([x, y]) => [W - x, y]);
 
 const drawPerson = (c: Ctx, s: CastSpec, k: Look) => {
   const sketch = style().characters === "sketch";
-  const skin = sketch ? "#FFFFFF" : s.skin ?? "#F2D3B1";
+  const skin = sketch ? style().sketchFill ?? "#FFFFFF" : s.skin ?? "#F2D3B1";
   const outfit = s.outfit ?? "#3A7BD5";
-  const hairC = sketch ? "rgb(40,40,46)" : s.hairColor ?? "#2B2320";
+  const hairC = sketch ? style().sketchHair ?? "rgb(40,40,46)" : s.hairColor ?? "#2B2320";
   const hx = 256, hy = 218, r = 146;
   const right = ARM[k.pose === "up" || k.pose === "point" || k.pose === "hips" || k.pose === "hold" ? k.pose : "down"];
   const left = mirror(ARM[k.pose === "up" || k.pose === "hips" ? k.pose : "down"]);
@@ -475,7 +475,7 @@ export const getSprite = (id: string, spec: CastSpec, look: Look): Sprite => {
   c.lineCap = "round";
   LW = LW0 * st.line;
   OUT = st.ink;
-  FEAT = st.characters === "paper" ? "#2B2622" : st.ink;
+  FEAT = st.features ?? (st.characters === "paper" ? "#2B2622" : st.ink);
   if (st.characters === "paper") {
     // each cut-out piece drops a soft shadow on the pieces under it
     c.shadowColor = "rgba(40,25,10,0.3)";
@@ -504,7 +504,10 @@ export const getEmoji = (text: string): Sprite => {
     c.font = `900 ${size}px ${TEXT_FONT}`;
     c.lineJoin = "round";
     c.lineWidth = size * 0.16;
-    c.strokeStyle = style().characters === "paper" ? "#3A2F28" : style().ink;
+    const st = style();
+    const edge = st.features ?? (st.characters === "paper" ? "#3A2F28" : st.ink);
+    // a text bubble needs an outline that differs from its fill, or it turns into a blob
+    c.strokeStyle = edge === st.titleColor || edge.startsWith("rgba(0,0,0,0") ? st.captions.stroke : edge;
     c.strokeText(text, 256, 270);
     c.fillStyle = style().titleColor;
     c.fillText(text, 256, 270);
@@ -642,5 +645,37 @@ export const getCloud = (): THREE.CanvasTexture => {
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
   cache.set("cloud", { map, depth: new THREE.MeshDepthMaterial() });
+  return map;
+};
+
+/** Toy-brick baseplate: a grid of studs. */
+export const getStuds = (hex: string): THREE.CanvasTexture => {
+  const key = `studs|${hex}`;
+  const hit = cache.get(key);
+  if (hit) return hit.map;
+  const n = 512;
+  const canvas = makeCanvas(n, n);
+  const c = canvas.getContext("2d")!;
+  const base = new THREE.Color(hex);
+  c.fillStyle = `#${base.getHexString()}`;
+  c.fillRect(0, 0, n, n);
+  const step = n / 10;
+  for (let i = 0; i < 10; i++) {
+    for (let j = 0; j < 10; j++) {
+      const x = (i + 0.5) * step, y = (j + 0.5) * step;
+      disc(c, x + 3, y + 4, step * 0.3);
+      c.fillStyle = `#${base.clone().multiplyScalar(0.72).getHexString()}`;
+      c.fill();
+      disc(c, x, y, step * 0.3);
+      c.fillStyle = `#${base.clone().lerp(new THREE.Color("#FFFFFF"), 0.18).getHexString()}`;
+      c.fill();
+    }
+  }
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.wrapS = map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(90, 90);
+  map.anisotropy = 16;
+  cache.set(key, { map, depth: new THREE.MeshDepthMaterial() });
   return map;
 };
