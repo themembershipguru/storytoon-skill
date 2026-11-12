@@ -27,13 +27,14 @@ const FACE: Record<Face, { brow: number; eye: number; mouth: "flat" | "smile" | 
   worried: { brow: 0.4, eye: 1.15, mouth: "small" },
 };
 
-const ARM_Z: Record<Pose, [number, number]> = { down: [0.14, -0.14], up: [2.6, -2.6], point: [0.14, -1.45], hips: [0.7, -0.7], hold: [0.14, -0.95] };
+// [left arm, right arm] swing outwards from the shoulder; 0 hangs straight down
+const ARM_Z: Record<Pose, [number, number]> = { down: [-0.28, 0.28], up: [-2.55, 2.55], point: [-0.28, 1.45], hips: [-0.75, 0.75], hold: [-0.28, 0.95] };
 
 const Hat: React.FC<{ s: CastSpec; y: number; r: number }> = ({ s, y, r }) => {
   const hat = s.hat ?? "none";
   const c = s.hatColor ?? (hat === "straw" ? "#E8C45A" : hat === "crown" ? "#F5C542" : hat === "tophat" ? "#2B2B33" : "#D9534F");
-  if (hat === "cap") return <><Part geo={<sphereGeometry args={[r * 1.04, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2.2]} />} c={c} p={[0, y + r * 0.1, 0]} /><Part geo={<boxGeometry args={[r * 1.1, 0.05, r * 0.8]} />} c={c} p={[0, y + r * 0.35, r * 0.95]} /></>;
-  if (hat === "beanie") return <><Part geo={<sphereGeometry args={[r * 1.05, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2]} />} c={c} p={[0, y + r * 0.15, 0]} /><Part geo={<icosahedronGeometry args={[0.1, 0]} />} c="#FFFFFF" p={[0, y + r * 1.25, 0]} /></>;
+  if (hat === "cap") return <><Part geo={<sphereGeometry args={[r * 1.05, 8, 5, 0, Math.PI * 2, 0, Math.PI / 3]} />} c={c} p={[0, y + 0.02, 0]} /><Part geo={<boxGeometry args={[r * 1.1, 0.05, r * 0.7]} />} c={c} p={[0, y + r * 0.56, r * 1.05]} /></>;
+  if (hat === "beanie") return <><Part geo={<sphereGeometry args={[r * 1.06, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2.8]} />} c={c} p={[0, y + 0.03, 0]} /><Part geo={<icosahedronGeometry args={[0.1, 0]} />} c="#FFFFFF" p={[0, y + r * 1.25, 0]} /></>;
   if (hat === "tophat") return <><Part geo={<cylinderGeometry args={[r * 1.25, r * 1.25, 0.05, 10]} />} c={c} p={[0, y + r * 0.72, 0]} /><Part geo={<cylinderGeometry args={[r * 0.72, r * 0.72, 0.5, 10]} />} c={c} p={[0, y + r * 0.72 + 0.26, 0]} /></>;
   if (hat === "straw") return <><Part geo={<cylinderGeometry args={[r * 1.7, r * 1.7, 0.04, 12]} />} c={c} p={[0, y + r * 0.62, 0]} /><Part geo={<cylinderGeometry args={[r * 0.7, r * 0.85, 0.24, 10]} />} c={c} p={[0, y + r * 0.62 + 0.13, 0]} /></>;
   if (hat === "crown") return <Part geo={<cylinderGeometry args={[r * 0.78, r * 0.62, 0.26, 5, 1, true]} />} c={c} p={[0, y + r * 0.95, 0]} />;
@@ -79,7 +80,7 @@ export const LowPolyBody: React.FC<{ spec: CastSpec; face: Face; pose: Pose; mou
       {[-1, 1].map((sg) => <Part key={sg} geo={<boxGeometry args={[0.15, 0.3, 0.2]} />} c="#3A2E28" p={[sg * 0.13, 0.15, 0.02]} />)}
       <Part geo={<cylinderGeometry args={[0.24, 0.36, 0.62, 7]} />} c={outfit} p={[0, 0.6, 0]} />
       {[[-1, la], [1, ra]].map(([sg, rot]) => (
-        <group key={sg} position={[sg * 0.3, 0.86, 0]} rotation={[0, 0, rot]}>
+        <group key={sg} position={[sg * 0.31, 0.86, 0]} rotation={[0, 0, rot]}>
           <Part geo={<boxGeometry args={[0.1, 0.4, 0.1]} />} c={outfit} p={[0, -0.2, 0]} />
           <Part geo={<icosahedronGeometry args={[0.075, 0]} />} c={skin} p={[0, -0.43, 0]} />
         </group>
