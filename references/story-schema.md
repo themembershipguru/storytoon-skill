@@ -18,7 +18,7 @@ Coordinates: positions are `[x, z]` on the ground, in units where a character is
 }
 ```
 
-`id` names the output file. `style` is `toon`, `paper`, `whiteboard`, `lowpoly`, `pixel` or a custom name (see `styles.md`). `captions` is optional. `pitch` (for example `"-4Hz"`) is optional.
+`id` names the output file. `music` and `autoSfx` control sound (see `sound.md`); scenes and sets also take `sfx` and `ambience`. `style` is `toon`, `paper`, `whiteboard`, `lowpoly`, `pixel` or a custom name (see `styles.md`). `captions` is optional. `pitch` (for example `"-4Hz"`) is optional.
 
 ## Cast
 

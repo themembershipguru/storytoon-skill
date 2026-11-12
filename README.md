@@ -51,6 +51,12 @@ Same story, one word changed. Top row: `toon`, `paper`, `whiteboard`, `lineart`,
 
 You can also invent a style and give it a name. Tell Claude something like "make me a style called candy-pop, pastel pink sky, thick purple outlines, cyan captions" and it writes the settings into `styles/custom.json`, shows you a few stills, and from then on `"style": "candy-pop"` just works. There is one example in there already (`neon-night`). All the knobs are in [references/styles.md](references/styles.md).
 
+## Sound
+
+Silent cartoons feel cheap, so `npm run sounds` adds sound effects and music from [Openverse](https://openverse.org): whooshes on cuts, pops when things appear, coins clinking, a crackling campfire, crickets at night, and a music bed that dips while the narrator talks. You can ask for specific sounds per scene ("splash", "door creak", "gentle waves").
+
+It only uses CC0, public domain and CC BY audio, and writes a credits file for the CC BY ones. Paste those lines into your video description; that is the deal with the creators.
+
 ## Don't know what to make?
 
 There is a research command for that:
@@ -81,6 +87,7 @@ cd template
 npm install
 npm run check     # a still per scene, in out/check
 npm run voice     # narration and caption timing
+npm run sounds    # sound effects and music, plus a credits file
 npm run render    # out/two-woodcutters.mp4
 ```
 
@@ -88,7 +95,6 @@ npm run render    # out/two-woodcutters.mp4
 
 ## Things it can't do (yet)
 
-- No music or sound effects. Drop your own track at `template/public/music.mp3` and it will play quietly under the voice.
 - The characters are simple on purpose. If you want film-quality 3D, this is the wrong tool.
 - On a Linux server with no GPU, set `STORYTOON_GL=swangle`.
 

@@ -1,6 +1,6 @@
 ---
 name: storytoon
-description: Make a viral-style animated story reel (vertical 9:16, 80-90 s, never over 90) where hand-drawn 2D cartoon characters act in a 3D world, with a narrator voice and word-by-word captions. Use when the user asks for a cartoon story video, an animated parable or moral story, a "2D characters in 3D world" explainer, a rich-vs-poor style lesson reel, or says things like "make a story reel about X" / "X par animated kahani banao". It can also research which short videos already have a million views in a niche (yt-dlp) and turn those patterns into original ideas. Fourteen visual styles are built in (toon, paper cutout, whiteboard, line art, chalkboard, gold line art, comic book, flat vector, pixel art, PS2-era 3D, low-poly 3D, smooth CGI, clay, toy bricks) and the user can invent and name their own. Everything is drawn in code (no image generation, no paid API): the user gives a topic, you write the story, fill one JSON file, and render an mp4.
+description: Make a viral-style animated story reel (vertical 9:16, 80-90 s, never over 90) where hand-drawn 2D cartoon characters act in a 3D world, with a narrator voice and word-by-word captions. Use when the user asks for a cartoon story video, an animated parable or moral story, a "2D characters in 3D world" explainer, a rich-vs-poor style lesson reel, or says things like "make a story reel about X" / "X par animated kahani banao". It can also research which short videos already have a million views in a niche (yt-dlp) and turn those patterns into original ideas. Fourteen visual styles are built in (toon, paper cutout, whiteboard, line art, chalkboard, gold line art, comic book, flat vector, pixel art, PS2-era 3D, low-poly 3D, smooth CGI, clay, toy bricks) and the user can invent and name their own. Sound effects and music come from Openverse (CC0 and CC BY only, credits written for you). Everything is drawn in code (no image generation, no paid API): the user gives a topic, you write the story, fill one JSON file, and render an mp4.
 ---
 
 # Storytoon: 2D characters, 3D world, one JSON file
@@ -85,6 +85,7 @@ This renders one still per scene into `out/check/` with estimated timing, no aud
 
 ```
 npm run voice     # free narration + word timing -> public/audio, src/timing.json
+npm run sounds    # sound effects + music from Openverse -> public/sfx, src/sounds.json, out/<id>-credits.txt
 npm run check     # again: timing changed, so look once more
 npm run render    # -> out/<story id>.mp4
 ```
@@ -92,12 +93,13 @@ npm run render    # -> out/<story id>.mp4
 - The first `npm run voice` sets up a small Python environment by itself. It needs internet.
 - Voice is set by `voice` in the story (for example `en-US-AndrewMultilingualNeural`, `en-US-AvaMultilingualNeural`, `en-IN-PrabhatNeural`, `hi-IN-MadhurNeural`, `hi-IN-SwaraNeural`). List all of them with `.venv/bin/edge-tts --list-voices`. `rate` like `"+8%"` speeds it up; story reels usually want `+4%` to `+10%`.
 - Any edit to a `say` line needs `npm run voice` again. A line whose text no longer matches the saved audio plays silent with estimated timing, on purpose, so the mismatch is obvious.
-- Background music is optional: put a file the user has the rights to at `public/music.mp3` before running `npm run voice`. Never download music for them without checking its licence.
+- Sound effects and music come from `npm run sounds` (read `references/sound.md`). It only takes CC0, public-domain and CC BY audio. Effects for whips, flashes, pops, coins, ideas, campfires and night are added automatically; add `sfx` or `ambience` where the story needs a specific sound (a splash, a door, waves, rain), and set `"music"` to a one-word mood like "ukulele", "piano" or "lofi". Check what it picked, and if something sounds wrong, change the words or add `"pick": 2`.
+- If the user has their own music, put it at `public/music.mp3` and rerun `npm run voice`; it replaces the Openverse track. Never download other music for them without checking its licence.
 - After rendering, watch or sample the mp4 (for example pull a few frames) before saying it is done. Report the real length.
 
 ## Step 5: hand over
 
-Give the user the mp4 path, the length, a caption for the post (hook line, 2 short lines, a question to comment on) and 5 to 8 hashtags. Say that the voice is AI-generated; platforms increasingly ask for that label.
+Give the user the mp4 path, the length, a caption for the post (hook line, 2 short lines, a question to comment on) and 5 to 8 hashtags. Add the CC BY lines from `out/<id>-credits.txt` to the end of the caption: crediting them is the licence condition. Say that the voice is AI-generated; platforms increasingly ask for that label.
 
 ## Going beyond the library
 
@@ -116,3 +118,4 @@ Before adding code, check whether an `emoji` prop, a `block`, or a `bubble` alre
 - `references/story-craft.md`: how to write a story that holds attention.
 - `references/story-schema.md`: every field you can put in `story.json`.
 - `references/styles.md`: the built-in styles and how to invent a new one.
+- `references/sound.md`: sound effects, ambience and music from Openverse, and their licences.

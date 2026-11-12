@@ -9,7 +9,7 @@ import { loadFont as loadSerif } from "@remotion/google-fonts/Cinzel";
 import { resolveStyle, type StyleSpec } from "./engine/style";
 import { World } from "./engine/World";
 import { buildSlots, FPS, slotAt, type Slot } from "./engine/timing";
-import type { Story, Timing, Word } from "./engine/types";
+import type { Sounds, Story, Timing, Word } from "./engine/types";
 
 const { fontFamily } = loadFont("normal", { weights: ["800"], subsets: ["latin", "devanagari"] });
 const marker = loadMarker("normal", { weights: ["400"], subsets: ["latin"] }).fontFamily;
@@ -72,10 +72,45 @@ const Title: React.FC<{ text: string; t: number; st: StyleSpec }> = ({ text, t, 
   );
 };
 
-export const Film: React.FC<{ story: Story; timing: Timing; styleOverride?: string }> = ({ story, timing, styleOverride }) => {
+export const Film: React.FC<{ story: Story; timing: Timing; sounds?: Sounds; styleOverride?: string }> = ({ story, timing, sounds, styleOverride }) => {
   const frame = useCurrentFrame();
   const st = React.useMemo(() => resolveStyle(story, styleOverride), [story, styleOverride]);
-  const { slots } = React.useMemo(() => buildSlots(story, timing), [story, timing]);
+  const { slots, total } = React.useMemo(() => buildSlots(story, timing), [story, timing]);
+  // music sits lower while the narrator speaks, rises in the gaps, and fades in and out
+  const musicLevel = React.useMemo(() => {
+    const talk = new Float32Array(total);
+    for (const s of slots) for (let i = 0; i < s.words.length; i++) {
+      const a = s.from + Math.floor(s.words[i].t * FPS);
+      const b = s.from + Math.ceil((s.words[i + 1]?.t ?? s.words[i].t + 0.45) * FPS);
+      for (let f = Math.max(0, a - 3); f < Math.min(total, b + 3); f++) talk[f] = 1;
+    }
+    const lvl = new Float32Array(total);
+    let v = 0;
+    for (let f = 0; f < total; f++) { v += (talk[f] - v) * 0.12; lvl[f] = v; }
+    return lvl;
+  }, [slots, total]);
+  // sound cues on the timeline; a background loop that carries on into the next scene plays as one sound
+  const placed = React.useMemo(() => {
+    const out: { from: number; len: number; file: string; vol: number; ambient: boolean }[] = [];
+    const runs = new Map<string, (typeof out)[number] & { scene: number }>();
+    const cues = [...(sounds?.cues ?? [])].sort((x, y) => x.scene - y.scene || x.at - y.at);
+    for (const c of cues) {
+      const s = slots[c.scene];
+      if (!s || c.at >= s.dur) continue;
+      const from = s.from + Math.round(c.at * FPS);
+      if (c.ambient) {
+        const run = runs.get(c.file);
+        if (run && run.scene === c.scene - 1 && c.at === 0) { run.len = s.from + s.frames - run.from; run.scene = c.scene; continue; }
+        const r = { from, len: s.from + s.frames - from, file: c.file, vol: c.vol, ambient: true, scene: c.scene };
+        runs.set(c.file, r);
+        out.push(r);
+      } else {
+        const len = Math.min(Math.round((c.max ?? 3) * FPS), total - from);
+        if (len > 0) out.push({ from, len, file: c.file, vol: c.vol, ambient: false });
+      }
+    }
+    return out;
+  }, [sounds, slots, total]);
   const slot = slotAt(slots, frame);
   const scene = story.scenes[slot.index];
   const t = (frame - slot.from) / FPS;
@@ -113,7 +148,23 @@ export const Film: React.FC<{ story: Story; timing: Timing; styleOverride?: stri
       <Captions slot={slot} t={t} story={story} st={st} />
       {flash > 0 ? <AbsoluteFill style={{ backgroundColor: "#FFFFFF", opacity: flash * 0.85 }} /> : null}
       {timing.voiced ? slots.map((s) => (s.audio ? <Sequence key={s.index} from={s.from} durationInFrames={s.frames}><Audio src={staticFile(s.audio)} /></Sequence> : null)) : null}
-      {timing.music ? <Audio src={staticFile("music.mp3")} volume={0.1} loop /> : null}
+      {timing.music || sounds?.music ? (
+        <Audio
+          src={staticFile(timing.music ? "music.mp3" : sounds!.music!.file)}
+          loop
+          volume={(f) => {
+            const base = timing.music ? 0.3 : sounds!.music!.vol;
+            const duck = 1 - 0.5 * (musicLevel[Math.min(total - 1, f)] ?? 0);
+            const fade = Math.min(1, f / FPS, (total - f) / (FPS * 2));
+            return Math.max(0, base * duck * fade);
+          }}
+        />
+      ) : null}
+      {placed.map((c, i) => (
+        <Sequence key={i} from={c.from} durationInFrames={c.len}>
+          <Audio src={staticFile(c.file)} loop={c.ambient} volume={(f) => (c.ambient ? c.vol * Math.min(1, f / 15, (c.len - f) / 15) : c.vol)} />
+        </Sequence>
+      ))}
     </AbsoluteFill>
   );
 };

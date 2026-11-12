@@ -25,5 +25,12 @@ const chrome = browser();
 if (!chrome) console.log("No installed Chrome found: using Remotion's own browser (first run downloads it, which can take a few minutes).");
 const r = run(chrome);
 fs.rmSync(propsFile, { force: true });
+// Shorts, Reels and TikTok play at about -14 LUFS; level the final mix to match so it is not quieter than the feed.
+if (r.status === 0 && spawnSync("ffmpeg", ["-version"]).status === 0) {
+  const tmp = path.join(root, out.replace(/\.mp4$/, ".tmp.mp4"));
+  const n = spawnSync("ffmpeg", ["-v", "error", "-y", "-i", path.join(root, out), "-c:v", "copy", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "192k", tmp]);
+  if (n.status === 0) fs.renameSync(tmp, path.join(root, out));
+  else { fs.rmSync(tmp, { force: true }); console.log("Loudness levelling skipped (ffmpeg failed); the video is fine but may be quieter than others."); }
+}
 if (r.status === 0) console.log(`\nDone: ${out}`);
 process.exit(r.status ?? 1);

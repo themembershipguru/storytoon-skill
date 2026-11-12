@@ -62,7 +62,7 @@ export type CameraSpec = {
   zoom?: number; // 1 = default distance, 0.8 = closer
 };
 
-export type SetSpec = { ground?: GroundKind; time?: TimeOfDay; props?: PropSpec[] };
+export type SetSpec = { ground?: GroundKind; time?: TimeOfDay; props?: PropSpec[]; ambience?: SoundRef | SoundRef[] };
 
 export type SceneSpec = {
   say: string; // narration. *stars* mark highlighted caption words.
@@ -76,7 +76,13 @@ export type SceneSpec = {
   transition?: "cut" | "whip" | "flash"; // how this scene starts
   voice?: string; // overrides story.voice for this line
   hold?: number; // extra seconds of silence after the line
+  sfx?: SoundRef | SoundRef[]; // extra sound effects, e.g. "door creak" or {"q": "door creak", "at": 1.2}
+  ambience?: SoundRef | SoundRef[]; // looping background sound for this scene, e.g. "ocean waves"
+  sound?: boolean; // false: no automatic sound effects in this scene
 };
+
+export type SoundRef = string | { q: string; at?: number; vol?: number; max?: number; pick?: number };
+export type Sounds = { music: { file: string; vol: number } | null; cues: { scene: number; at: number; file: string; vol: number; max?: number; ambient?: boolean }[] };
 
 export type Story = {
   id: string;
@@ -86,6 +92,8 @@ export type Story = {
   voice?: string;
   rate?: string;
   pitch?: string;
+  music?: false | string | { q: string; vol?: number; pick?: number }; // background music search, or false for none
+  autoSfx?: boolean; // false: only the sound effects you list
   captions?: { y?: number; size?: number; highlight?: string; maxWords?: number };
   cast: Record<string, CastSpec>;
   sets?: Record<string, SetSpec>;

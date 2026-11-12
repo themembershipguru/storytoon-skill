@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "research": "node tools/research.mjs",
     "voice": "node tools/voice.mjs",
+    "sounds": "node tools/sounds.mjs",
     "check": "node tools/check.mjs",
     "render": "node tools/render.mjs"
   },

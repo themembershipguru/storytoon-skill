@@ -5,3 +5,5 @@ out
 .env
 tools/.tmp-*.json
 __pycache__
+public/sfx/*
+!public/sfx/.gitkeep
