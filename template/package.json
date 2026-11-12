@@ -1,0 +1,32 @@
+{
+  "name": "storytoon",
+  "version": "1.0.0",
+  "description": "2D cartoon characters in a 3D world: story reels from one JSON file.",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "research": "node tools/research.mjs",
+    "voice": "node tools/voice.mjs",
+    "check": "node tools/check.mjs",
+    "render": "node tools/render.mjs"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.1.2",
+    "@remotion/bundler": "4.0.538",
+    "@remotion/cli": "4.0.538",
+    "@remotion/google-fonts": "4.0.538",
+    "@remotion/renderer": "4.0.538",
+    "@remotion/three": "4.0.538",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.538",
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/three": "^0.170.0",
+    "typescript": "^5.6.0"
+  }
+}

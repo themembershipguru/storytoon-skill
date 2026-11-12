@@ -1,0 +1,153 @@
+{
+  "id": "two-woodcutters",
+  "title": "The Two Woodcutters",
+  "voice": "en-US-AndrewMultilingualNeural",
+  "rate": "+6%",
+  "cast": {
+    "bram": { "skin": "#E8B88A", "outfit": "#D9534F", "hair": "spiky", "hairColor": "#5A3A22", "extra": "beard" },
+    "odo": { "skin": "#F2D3B1", "outfit": "#2F9E8F", "hair": "bowl", "hairColor": "#2B2320", "hat": "straw", "extra": "glasses" },
+    "prof": { "kind": "owl", "outfit": "#8A5A3B", "extra": "glasses" }
+  },
+  "sets": {
+    "forest": {
+      "ground": "grass",
+      "props": [
+        { "type": "tree", "scatter": { "count": 16, "area": [-16, -20, 16, -6], "seed": 4 } },
+        { "type": "pine", "scatter": { "count": 9, "area": [-18, -24, 18, -10], "seed": 9 } },
+        { "type": "tree", "at": [-7.5, -1.5], "scale": 1.2 },
+        { "type": "tree", "at": [7.8, -2.5], "scale": 1.3 },
+        { "type": "bush", "scatter": { "count": 8, "area": [-10, -5, 10, 4], "seed": 6 } },
+        { "type": "stump", "at": [-0.4, -2.2] },
+        { "type": "stump", "at": [1.1, -3.1] },
+        { "type": "mountain", "at": [-38, -120] },
+        { "type": "mountain", "at": [34, -135], "scale": 1.3 }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "say": "Two woodcutters started in the *same forest* on the *same day.*",
+      "set": "forest",
+      "title": "WORK HARD?",
+      "camera": { "shot": "wide", "on": [0, -1], "move": "push", "zoom": 0.62 },
+      "actors": [
+        { "who": "bram", "at": [-1.9, 0], "face": "happy", "hold": "🪓", "enter": 0.2 },
+        { "who": "odo", "at": [1.9, 0], "face": "happy", "hold": "🪓", "flip": true, "enter": 0.45 }
+      ]
+    },
+    {
+      "say": "Bram was *stronger.* He swung his axe from sunrise to sunset. No breaks.",
+      "set": "forest",
+      "transition": "whip",
+      "camera": { "shot": "medium", "on": "bram", "move": "orbit", "zoom": 0.8 },
+      "actors": [{ "who": "bram", "at": [-1.9, 0], "face": "angry", "act": "work", "hold": "🪓" }],
+      "props": [{ "type": "logs", "at": [-3.9, -0.6], "count": 3, "rot": 20 }]
+    },
+    {
+      "say": "Odo was slower. And every hour, he sat down and did... *nothing?*",
+      "set": "forest",
+      "camera": { "shot": "close", "on": "odo", "move": "push" },
+      "actors": [
+        { "who": "odo", "at": [1.9, 0], "face": "smug", "act": "idle" },
+        { "who": "bram", "at": [0.8, -2.6], "face": "think", "bubble": "?" }
+      ]
+    },
+    {
+      "say": "By evening, Bram looked at the two piles... and *froze.*",
+      "set": "forest",
+      "time": "sunset",
+      "transition": "whip",
+      "camera": { "shot": "close", "on": "bram", "move": "push", "zoom": 0.9 },
+      "actors": [{ "who": "bram", "at": [-1.9, 0], "face": "shocked", "act": "shake" }]
+    },
+    {
+      "say": "Odo's pile was almost *twice as big.*",
+      "set": "forest",
+      "time": "sunset",
+      "camera": { "shot": "medium", "on": [0, 0.5], "angle": 10, "move": "rise", "zoom": 1.6 },
+      "actors": [
+        { "who": "bram", "at": [-2.7, 0.9], "face": "sad" },
+        { "who": "odo", "at": [2.9, 0.9], "face": "joy", "act": "hop", "flip": true }
+      ],
+      "props": [
+        { "type": "logs", "at": [-1.4, 0.4], "count": 6, "rot": 8 },
+        { "type": "logs", "at": [1.1, 0.4], "count": 15, "rot": -8, "enter": 0.5 }
+      ]
+    },
+    {
+      "say": "Next day, Bram worked *even harder.* He skipped lunch. He skipped water.",
+      "set": "forest",
+      "transition": "whip",
+      "camera": { "shot": "low", "on": "bram", "move": "orbit", "zoom": 0.8 },
+      "actors": [{ "who": "bram", "at": [-1.9, 0], "face": "worried", "act": "work", "hold": "🪓", "bubble": "💦" }]
+    },
+    {
+      "say": "He lost *again.*",
+      "set": "forest",
+      "time": "sunset",
+      "camera": { "shot": "top", "on": [0, 0.8], "move": "pull", "zoom": 0.82 },
+      "actors": [
+        { "who": "bram", "at": [-1.8, 2.2], "face": "sad" },
+        { "who": "odo", "at": [1.8, 2.2], "face": "happy" }
+      ],
+      "props": [
+        { "type": "logs", "at": [-1.8, -0.2], "count": 5 },
+        { "type": "logs", "at": [1.8, -0.2], "count": 15 }
+      ]
+    },
+    {
+      "say": "So he finally asked: *How?* You rest every single hour!",
+      "set": "forest",
+      "time": "sunset",
+      "camera": { "shot": "medium", "on": [0, 0], "move": "push", "zoom": 0.72 },
+      "actors": [
+        { "who": "bram", "at": [-1.3, 0], "face": "angry", "act": "talk", "pose": "up" },
+        { "who": "odo", "at": [1.3, 0], "face": "happy", "flip": true }
+      ]
+    },
+    {
+      "say": "Odo smiled. I wasn't resting. I was *sharpening my axe.*",
+      "set": "forest",
+      "time": "sunset",
+      "transition": "flash",
+      "camera": { "shot": "close", "on": "odo", "move": "push" },
+      "actors": [{ "who": "odo", "at": [1.3, 0], "face": "joy", "act": "talk", "hold": "🪓", "bubble": "✨" }]
+    },
+    {
+      "say": "Hard work with a dull axe is just *noise.*",
+      "ground": "cobble",
+      "transition": "whip",
+      "camera": { "shot": "medium", "on": [0, 0], "move": "push", "zoom": 0.95 },
+      "actors": [{ "who": "prof", "at": [-1.15, 1.6], "act": "talk", "pose": "point", "scale": 0.85 }],
+      "props": [
+        { "type": "board", "at": [0.35, -0.4], "lines": ["DULL AXE + 12 HRS = 5", "SHARP AXE + 8 HRS = 15"] },
+        { "type": "house", "at": [-6, -9], "rot": 20 },
+        { "type": "house", "at": [6.5, -11], "rot": -15, "color": "#DDEBCB", "color2": "#5B7FBF" },
+        { "type": "tree", "at": [0, -12], "scale": 1.4 }
+      ]
+    },
+    {
+      "say": "So before you work harder this week, ask: *what is my axe?* And when did I last sharpen it?",
+      "set": "forest",
+      "time": "night",
+      "title": "SHARPEN FIRST",
+      "camera": { "shot": "medium", "on": [0, 0], "move": "orbit", "zoom": 0.85 },
+      "actors": [
+        { "who": "bram", "at": [-1.6, 0.2], "face": "think", "hold": "🪓", "bubble": "💡" },
+        { "who": "odo", "at": [1.6, 0.2], "face": "happy", "flip": true }
+      ],
+      "props": [{ "type": "campfire", "at": [0, 0.9] }]
+    },
+    {
+      "say": "*Follow* for more stories like this.",
+      "set": "forest",
+      "time": "night",
+      "camera": { "shot": "close", "on": [0, 0], "move": "push", "zoom": 1.25 },
+      "actors": [
+        { "who": "bram", "at": [-0.9, 0], "act": "cheer" },
+        { "who": "odo", "at": [0.9, 0], "act": "cheer", "flip": true }
+      ],
+      "props": [{ "type": "campfire", "at": [0, -1.5] }]
+    }
+  ]
+}
