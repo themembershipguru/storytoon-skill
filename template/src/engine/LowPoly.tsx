@@ -96,7 +96,7 @@ export const LowPolyBody: React.FC<{ spec: CastSpec; face: Face; pose: Pose; mou
       {[-1, 1].map((sg) => (
         <group key={sg}>
           <mesh position={[sg * 0.14, hy + 0.04, hr * 0.93]}><boxGeometry args={[0.07, eyeH, 0.04]} /><Dark /></mesh>
-          <mesh position={[sg * 0.14, hy + 0.16 + (face === "shocked" ? 0.04 : 0), hr * 0.93]} rotation={[0, 0, sg * f.brow]}><boxGeometry args={[0.13, 0.025, 0.03]} /><Dark /></mesh>
+          <mesh position={[sg * 0.14, hy + 0.16 + (face === "shocked" ? 0.04 : 0), hr * 0.93]} rotation={[0, 0, -sg * f.brow]}><boxGeometry args={[0.13, 0.025, 0.03]} /><Dark /></mesh>
           {spec.extra === "glasses" ? <mesh position={[sg * 0.14, hy + 0.04, hr * 0.98]}><torusGeometry args={[0.1, 0.014, 4, 12]} /><Dark /></mesh> : null}
         </group>
       ))}
