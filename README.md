@@ -37,7 +37,19 @@ The first run copies the project next to you and does an `npm install`, so give 
 3. It renders a still of every scene and looks at them, because the first attempt always has someone standing half outside the frame.
 4. Voice, one more check, final render. You get a 1080x1920 mp4, a caption and hashtags.
 
-Videos come out around 80 to 100 seconds unless you ask for shorter.
+Videos come out at 80 to 90 seconds unless you ask for shorter. 90 is the ceiling.
+
+## Five looks, or make your own
+
+![the same scene in five styles](docs/styles.jpg)
+
+Same story, one word changed: `toon`, `paper`, `whiteboard`, `lowpoly`, `pixel`.
+
+```json
+"style": "whiteboard"
+```
+
+You can also invent a style and give it a name. Tell Claude something like "make me a style called candy-pop, pastel pink sky, thick purple outlines, cyan captions" and it writes the settings into `styles/custom.json`, shows you a few stills, and from then on `"style": "candy-pop"` just works. There is one example in there already (`neon-night`). All the knobs are in [references/styles.md](references/styles.md).
 
 ## Don't know what to make?
 
@@ -77,7 +89,6 @@ npm run render    # out/two-woodcutters.mp4
 ## Things it can't do (yet)
 
 - No music or sound effects. Drop your own track at `template/public/music.mp3` and it will play quietly under the voice.
-- One art style. More are planned.
 - The characters are simple on purpose. If you want film-quality 3D, this is the wrong tool.
 - On a Linux server with no GPU, set `STORYTOON_GL=swangle`.
 

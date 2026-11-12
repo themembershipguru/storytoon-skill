@@ -80,5 +80,7 @@ const scenes = story.scenes.map((s, i) => {
 
 const music = fs.existsSync(path.join(root, "public", "music.mp3"));
 fs.writeFileSync(path.join(root, "src", "timing.json"), JSON.stringify({ voiced: true, music, scenes }, null, 1));
-const total = scenes.reduce((n, s) => n + s.dur + 0.22, 0);
+const total = scenes.reduce((n, s, i) => n + s.dur + 0.22 + (story.scenes[i].hold ?? 0), 0);
 console.log(`Done. ${scenes.length} lines, about ${total.toFixed(1)} s. ${music ? "Music: public/music.mp3" : "No music (put a file at public/music.mp3 to add one)."}`);
+if (total > 90) console.log(`\nTOO LONG: ${total.toFixed(1)} s is over the 90 s limit. Cut or shorten about ${Math.ceil((total - 88) * 2.7)} words, then run this again.`);
+else if (total < 80) console.log(`\nShort: ${total.toFixed(1)} s. The target is 80 to 90 s; add about ${Math.ceil((84 - total) * 2.7)} words if this was not on purpose.`);

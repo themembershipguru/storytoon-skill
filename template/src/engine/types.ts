@@ -80,6 +80,8 @@ export type SceneSpec = {
 
 export type Story = {
   id: string;
+  style?: string | Record<string, unknown>; // "toon" (default), "paper", "whiteboard", "lowpoly", "pixel", or a custom name
+  styles?: Record<string, Record<string, unknown>>; // custom styles for this story only
   title?: string;
   voice?: string;
   rate?: string;

@@ -7,6 +7,7 @@ Coordinates: positions are `[x, z]` on the ground, in units where a character is
 ```json
 {
   "id": "two-woodcutters",
+  "style": "toon",
   "title": "The Two Woodcutters",
   "voice": "en-US-AndrewMultilingualNeural",
   "rate": "+6%",
@@ -17,7 +18,7 @@ Coordinates: positions are `[x, z]` on the ground, in units where a character is
 }
 ```
 
-`id` names the output file. `captions` is optional. `pitch` (for example `"-4Hz"`) is optional.
+`id` names the output file. `style` is `toon`, `paper`, `whiteboard`, `lowpoly`, `pixel` or a custom name (see `styles.md`). `captions` is optional. `pitch` (for example `"-4Hz"`) is optional.
 
 ## Cast
 

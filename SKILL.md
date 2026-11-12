@@ -1,6 +1,6 @@
 ---
 name: storytoon
-description: Make a viral-style animated story reel (vertical 9:16, 80-100 s by default) where hand-drawn 2D cartoon characters act in a 3D world, with a narrator voice and word-by-word captions. Use when the user asks for a cartoon story video, an animated parable or moral story, a "2D characters in 3D world" explainer, a rich-vs-poor style lesson reel, or says things like "make a story reel about X" / "X par animated kahani banao". It can also research which short videos already have a million views in a niche (yt-dlp) and turn those patterns into original ideas. Everything is drawn in code (no image generation, no paid API): the user gives a topic, you write the story, fill one JSON file, and render an mp4.
+description: Make a viral-style animated story reel (vertical 9:16, 80-90 s, never over 90) where hand-drawn 2D cartoon characters act in a 3D world, with a narrator voice and word-by-word captions. Use when the user asks for a cartoon story video, an animated parable or moral story, a "2D characters in 3D world" explainer, a rich-vs-poor style lesson reel, or says things like "make a story reel about X" / "X par animated kahani banao". It can also research which short videos already have a million views in a niche (yt-dlp) and turn those patterns into original ideas. Five visual styles are built in (toon, paper cutout, whiteboard, low-poly 3D, pixel retro) and the user can invent and name their own. Everything is drawn in code (no image generation, no paid API): the user gives a topic, you write the story, fill one JSON file, and render an mp4.
 ---
 
 # Storytoon: 2D characters, 3D world, one JSON file
@@ -45,7 +45,7 @@ Write the script as a numbered list of scenes, one narration line each, and show
 
 Rules for the script:
 
-- Default length is 80 to 100 seconds: 18 to 24 scenes, 220 to 270 spoken words. Go shorter (45 to 60 s, 12 to 14 scenes) only if the user asks. YouTube Shorts, Instagram Reels and TikTok all accept up to 3 minutes. After `npm run voice`, check the real length it prints; if it is under 80 s, add scenes rather than slowing the voice.
+- Length is 80 to 90 seconds, and **90 is a hard maximum**: 18 to 22 scenes, 215 to 245 spoken words. Go shorter (45 to 60 s, 12 to 14 scenes) only if the user asks. `npm run voice` prints the real length and says how many words to cut or add; if it says TOO LONG, cut lines and run it again before rendering. Never fix length by changing the voice speed a lot.
 - One idea per scene, at most about 16 words per line.
 - Original stories only. Folk tales and fables in the public domain are fine; retell them in your own words. Never copy the script, characters or scene list of someone else's video, even if the user shares one as a reference: take the format, not the content.
 - No real people, brands or logos as characters.
@@ -58,6 +58,7 @@ Read `references/story-schema.md` for every field, prop, face and camera shot. T
 
 What matters most:
 
+- **Style**: set `"style"` at the top. Ask the user which look they want if they have not said, and offer the five built-in ones by name. If they describe a look of their own, build it as a named custom style (see `references/styles.md`) and show them stills before the full film.
 - **Cast**: 2 to 4 characters, each with a clearly different outfit colour and head (hair, hat, glasses, beard), so the viewer can tell them apart at phone size.
 - **Sets**: put the scenery every scene shares into `sets` once and reuse it by name. Add scene-specific props in the scene.
 - **The frame is narrow.** A medium shot shows about 4.5 units of width at the actors; keep people who must be seen together within 3 units of each other, or use a wide shot or a bigger `zoom`.
@@ -114,3 +115,4 @@ Before adding code, check whether an `emoji` prop, a `block`, or a `bubble` alre
 - `template/`: the project you copy. `story/story.json` is the film; `src/engine/` is the renderer; `tools/` has research, voice, check and render.
 - `references/story-craft.md`: how to write a story that holds attention.
 - `references/story-schema.md`: every field you can put in `story.json`.
+- `references/styles.md`: the built-in styles and how to invent a new one.

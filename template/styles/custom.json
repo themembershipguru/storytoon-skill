@@ -1,0 +1,12 @@
+{
+  "neon-night": {
+    "base": "toon",
+    "ink": "#0B0B1E",
+    "colors": { "mix": "#FF3DCB", "amount": 0.06, "saturation": 1.35 },
+    "sky": { "day": ["#1B0F4A", "#FF5FA2"], "sunset": ["#2A0E55", "#FF8A3D"], "night": ["#05051A", "#3A1C8C"] },
+    "evenLight": true,
+    "post": { "saturate": 1.25, "contrast": 1.1, "grain": 0, "vignette": 0.4 },
+    "captions": { "highlight": "#3DF5FF" },
+    "titleColor": "#3DF5FF"
+  }
+}

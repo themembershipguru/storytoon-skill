@@ -1,13 +1,17 @@
 // Characters are painted in code onto a canvas, then used as textures on flat cards
 // standing in the 3D world. No image files, no image API.
 import * as THREE from "three";
+import { col, style } from "./style";
 import type { CastSpec, Face, Pose } from "./types";
 
 export const INK = "#1E1A17";
 const W = 512;
 const H = 640;
 const S = 2; // texture resolution multiplier
-const LW = 11;
+const LW0 = 11;
+let LW = LW0; // line width, set per style
+let OUT = INK; // outline colour (white in the paper style)
+let FEAT = INK; // colour of eyes, mouths, brows
 const TAU = Math.PI * 2;
 
 export type Look = { face: Face; pose: Pose; mouth: boolean; blink: boolean; hold?: string };
@@ -48,14 +52,27 @@ const disc = (c: Ctx, x: number, y: number, rx: number, ry = rx) => {
   c.beginPath();
   c.ellipse(x, y, rx, ry, 0, 0, TAU);
 };
-const paint = (c: Ctx, fill: string, lw = LW) => {
+const paint = (c: Ctx, fill: string, lw = LW, stroke = OUT) => {
+  c.fillStyle = fill.startsWith("#") ? col(fill) : fill;
+  c.fill();
+  c.lineWidth = lw;
+  c.strokeStyle = stroke;
+  c.stroke();
+};
+/** Like paint, for face details: always uses the dark feature colour and never casts a paper shadow. */
+const paintF = (c: Ctx, fill: string, lw = LW) => {
+  const blur = c.shadowBlur;
+  c.shadowBlur = 0;
+  c.shadowOffsetY = 0;
   c.fillStyle = fill;
   c.fill();
   c.lineWidth = lw;
-  c.strokeStyle = INK;
+  c.strokeStyle = FEAT;
   c.stroke();
+  c.shadowBlur = blur;
+  c.shadowOffsetY = blur ? 5 : 0;
 };
-const line = (c: Ctx, pts: number[][], lw = LW, color = INK) => {
+const line = (c: Ctx, pts: number[][], lw = LW, color = FEAT) => {
   c.beginPath();
   pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
   c.lineWidth = lw;
@@ -63,8 +80,8 @@ const line = (c: Ctx, pts: number[][], lw = LW, color = INK) => {
   c.stroke();
 };
 const limb = (c: Ctx, pts: number[][], color: string, w = 20) => {
-  line(c, pts, w + LW * 1.7, INK);
-  line(c, pts, w, color);
+  line(c, pts, w + LW * 1.7, OUT);
+  line(c, pts, w, col(color));
 };
 const shade = (hex: string, k: number) => {
   const col = new THREE.Color(hex);
@@ -96,23 +113,23 @@ const drawFace = (c: Ctx, k: Look, hx: number, hy: number) => {
     const x = hx + sgn * dx;
     if (eye === "dot" || eye === "up") {
       disc(c, x + (eye === "up" ? 6 : 0), ey - (eye === "up" ? 8 : 0), 13, 15);
-      c.fillStyle = INK;
+      c.fillStyle = FEAT;
       c.fill();
     } else if (eye === "wide") {
       disc(c, x, ey, 25, 27);
-      paint(c, "#FFFFFF", 7);
+      paintF(c, "#FFFFFF", 7);
       disc(c, x, ey, 8);
-      c.fillStyle = INK;
+      c.fillStyle = FEAT;
       c.fill();
     } else if (eye === "arc") {
       c.beginPath();
       c.arc(x, ey + 10, 20, Math.PI * 1.15, Math.PI * 1.85);
       c.lineWidth = 9;
-      c.strokeStyle = INK;
+      c.strokeStyle = FEAT;
       c.stroke();
     } else if (eye === "half") {
       disc(c, x, ey + 3, 13, 12);
-      c.fillStyle = INK;
+      c.fillStyle = FEAT;
       c.fill();
       line(c, [[x - 22, ey - 9], [x + 22, ey - 9]], 8);
     } else {
@@ -130,7 +147,7 @@ const drawFace = (c: Ctx, k: Look, hx: number, hy: number) => {
   let mouth = f.mouth;
   if (k.mouth && mouth !== "o") mouth = "open";
   c.lineWidth = 9;
-  c.strokeStyle = INK;
+  c.strokeStyle = FEAT;
   c.beginPath();
   if (mouth === "flat") { c.moveTo(hx - 22, my); c.lineTo(hx + 22, my); c.stroke(); }
   if (mouth === "tiny") { c.moveTo(hx - 10, my); c.lineTo(hx + 10, my); c.stroke(); }
@@ -141,15 +158,15 @@ const drawFace = (c: Ctx, k: Look, hx: number, hy: number) => {
   if (mouth === "grin") {
     c.arc(hx, my - 14, 44, 0, Math.PI);
     c.closePath();
-    paint(c, "#5A1F1F", 8);
+    paintF(c, "#5A1F1F", 8);
     disc(c, hx, my + 20, 20, 9);
     c.fillStyle = "#F08A8A";
     c.fill();
   }
-  if (mouth === "o") { disc(c, hx, my + 4, 19, 25); paint(c, "#5A1F1F", 8); }
+  if (mouth === "o") { disc(c, hx, my + 4, 19, 25); paintF(c, "#5A1F1F", 8); }
   if (mouth === "open") {
     disc(c, hx, my, 26, 19);
-    paint(c, "#5A1F1F", 8);
+    paintF(c, "#5A1F1F", 8);
     disc(c, hx, my + 9, 13, 6);
     c.fillStyle = "#F08A8A";
     c.fill();
@@ -159,7 +176,7 @@ const drawFace = (c: Ctx, k: Look, hx: number, hy: number) => {
     c.moveTo(hx + 104, hy - 60);
     c.quadraticCurveTo(hx + 126, hy - 22, hx + 104, hy - 16);
     c.quadraticCurveTo(hx + 82, hy - 22, hx + 104, hy - 60);
-    paint(c, "#8FD3FF", 6);
+    paintF(c, "#8FD3FF", 6);
   }
 };
 
@@ -206,7 +223,7 @@ const drawHairFront = (c: Ctx, s: CastSpec, hx: number, hy: number, r: number, h
   c.restore();
   disc(c, hx, hy, r);
   c.lineWidth = LW;
-  c.strokeStyle = INK;
+  c.strokeStyle = OUT;
   c.stroke();
 };
 
@@ -274,7 +291,7 @@ const drawExtra = (c: Ctx, s: CastSpec, hx: number, hy: number, hairC: string) =
       c.fillStyle = "rgba(255,255,255,0.28)";
       c.fill();
       c.lineWidth = 8;
-      c.strokeStyle = INK;
+      c.strokeStyle = FEAT;
       c.stroke();
     }
     line(c, [[hx - 18, hy + 2], [hx + 18, hy + 2]], 8);
@@ -283,7 +300,7 @@ const drawExtra = (c: Ctx, s: CastSpec, hx: number, hy: number, hairC: string) =
     for (const sgn of [-1, 1]) {
       c.beginPath();
       c.ellipse(hx + sgn * 24, hy + 46, 30, 13, sgn * -0.25, 0, TAU);
-      paint(c, hairC, 6);
+      paint(c, hairC, 6, FEAT);
     }
   }
   if (ex === "freckles") {
@@ -315,9 +332,10 @@ const ARM: Record<string, number[][]> = {
 const mirror = (pts: number[][]) => pts.map(([x, y]) => [W - x, y]);
 
 const drawPerson = (c: Ctx, s: CastSpec, k: Look) => {
-  const skin = s.skin ?? "#F2D3B1";
+  const sketch = style().characters === "sketch";
+  const skin = sketch ? "#FFFFFF" : s.skin ?? "#F2D3B1";
   const outfit = s.outfit ?? "#3A7BD5";
-  const hairC = s.hairColor ?? "#2B2320";
+  const hairC = sketch ? "rgb(40,40,46)" : s.hairColor ?? "#2B2320";
   const hx = 256, hy = 218, r = 146;
   const right = ARM[k.pose === "up" || k.pose === "point" || k.pose === "hips" || k.pose === "hold" ? k.pose : "down"];
   const left = mirror(ARM[k.pose === "up" || k.pose === "hips" ? k.pose : "down"]);
@@ -359,10 +377,11 @@ const drawPerson = (c: Ctx, s: CastSpec, k: Look) => {
     paint(c, hairC, 8);
     c.restore();
     disc(c, hx, hy + 66, 44, 30);
-    c.fillStyle = skin;
+    c.fillStyle = col(skin);
     c.fill();
     disc(c, hx, hy, r);
     c.lineWidth = LW;
+    c.strokeStyle = OUT;
     c.stroke();
   }
   drawHairFront(c, s, hx, hy, r, hairC);
@@ -421,7 +440,7 @@ const drawOwl = (c: Ctx, s: CastSpec, k: Look) => {
     disc(c, x, hy, 56);
     paint(c, "#FFFFFF", 9);
     if (k.blink || k.face === "sleepy") line(c, [[x - 30, hy], [x + 30, hy]], 9);
-    else { disc(c, x + (k.face === "think" ? 10 : 0), hy + (k.face === "shocked" ? 0 : 4), k.face === "shocked" ? 12 : 21); c.fillStyle = INK; c.fill(); }
+    else { disc(c, x + (k.face === "think" ? 10 : 0), hy + (k.face === "shocked" ? 0 : 4), k.face === "shocked" ? 12 : 21); c.fillStyle = FEAT; c.fill(); }
     if (k.face === "angry") line(c, [[x + sgn * 44, hy - 66], [x - sgn * 34, hy - 36]], 11);
   }
   c.beginPath();
@@ -445,7 +464,8 @@ const drawOwl = (c: Ctx, s: CastSpec, k: Look) => {
 
 /** Texture (+ shadow material) for one character in one look. Cached. */
 export const getSprite = (id: string, spec: CastSpec, look: Look): Sprite => {
-  const key = `${id}|${JSON.stringify(spec)}|${look.face}|${look.pose}|${look.mouth ? 1 : 0}|${look.blink ? 1 : 0}|${look.hold ?? ""}`;
+  const st = style();
+  const key = `${st.key}|${id}|${JSON.stringify(spec)}|${look.face}|${look.pose}|${look.mouth ? 1 : 0}|${look.blink ? 1 : 0}|${look.hold ?? ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const canvas = makeCanvas(W * S, H * S);
@@ -453,6 +473,15 @@ export const getSprite = (id: string, spec: CastSpec, look: Look): Sprite => {
   c.scale(S, S);
   c.lineJoin = "round";
   c.lineCap = "round";
+  LW = LW0 * st.line;
+  OUT = st.ink;
+  FEAT = st.characters === "paper" ? "#2B2622" : st.ink;
+  if (st.characters === "paper") {
+    // each cut-out piece drops a soft shadow on the pieces under it
+    c.shadowColor = "rgba(40,25,10,0.3)";
+    c.shadowBlur = 9;
+    c.shadowOffsetY = 5;
+  }
   if (spec.kind === "owl") drawOwl(c, spec, look);
   else drawPerson(c, spec, look);
   const sprite = finish(canvas);
@@ -463,7 +492,7 @@ export const SPRITE_ASPECT = W / H;
 
 /** An emoji or a short word as a texture: bubbles, floating icons, held items. */
 export const getEmoji = (text: string): Sprite => {
-  const key = `emoji|${text}`;
+  const key = `emoji|${style().key}|${text}`;
   const hit = cache.get(key);
   if (hit) return hit;
   const canvas = makeCanvas(512, 512);
@@ -475,9 +504,9 @@ export const getEmoji = (text: string): Sprite => {
     c.font = `900 ${size}px ${TEXT_FONT}`;
     c.lineJoin = "round";
     c.lineWidth = size * 0.16;
-    c.strokeStyle = INK;
+    c.strokeStyle = style().characters === "paper" ? "#3A2F28" : style().ink;
     c.strokeText(text, 256, 270);
-    c.fillStyle = "#FFD23F";
+    c.fillStyle = style().titleColor;
     c.fillText(text, 256, 270);
   } else {
     c.font = `380px ${EMOJI_FONT}`;

@@ -2,11 +2,19 @@
 import React from "react";
 import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from "remotion";
 import { loadFont } from "@remotion/google-fonts/Baloo2";
+import { loadFont as loadMarker } from "@remotion/google-fonts/PatrickHand";
+import { loadFont as loadPixel } from "@remotion/google-fonts/PressStart2P";
+import { resolveStyle, type StyleSpec } from "./engine/style";
 import { World } from "./engine/World";
 import { buildSlots, FPS, slotAt, type Slot } from "./engine/timing";
 import type { Story, Timing, Word } from "./engine/types";
 
 const { fontFamily } = loadFont("normal", { weights: ["800"], subsets: ["latin", "devanagari"] });
+const marker = loadMarker("normal", { weights: ["400"], subsets: ["latin"] }).fontFamily;
+const pixelFont = loadPixel("normal", { weights: ["400"], subsets: ["latin"] }).fontFamily;
+// the round font is always the fallback, so Hindi still renders in every style
+const fontOf = (st: StyleSpec) => (st.captions.font === "marker" ? `${marker}, ${fontFamily}` : st.captions.font === "pixel" ? `${pixelFont}, ${fontFamily}` : fontFamily);
+const GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.28  0 0 0 0 0.2  0 0 0 0.5 0"/></filter><rect width="400" height="400" filter="url(#n)"/></svg>')}")`;
 
 const pop = (x: number) => {
   if (x <= 0) return 0;
@@ -28,9 +36,11 @@ const chunk = (words: Word[], maxWords: number): { start: number; words: Word[] 
   return out;
 };
 
-const stroke = (px: number): React.CSSProperties => ({ WebkitTextStroke: `${px}px #14110F`, paintOrder: "stroke fill" });
+const stroke = (px: number, color: string): React.CSSProperties => ({ WebkitTextStroke: `${px}px ${color}`, paintOrder: "stroke fill" });
 
-const Captions: React.FC<{ slot: Slot; t: number; story: Story }> = ({ slot, t, story }) => {
+const Captions: React.FC<{ slot: Slot; t: number; story: Story; st: StyleSpec }> = ({ slot, t, story, st }) => {
+  const cs = st.captions;
+  const sharp = cs.font === "pixel";
   const cfg = story.captions ?? {};
   const chunks = chunk(slot.words, cfg.maxWords ?? 2);
   let current = null as null | (typeof chunks)[number];
@@ -39,25 +49,26 @@ const Captions: React.FC<{ slot: Slot; t: number; story: Story }> = ({ slot, t, 
   const k = pop((t - current.start + 0.03) / 0.14);
   return (
     <div style={{ position: "absolute", left: 70, right: 70, top: `${(cfg.y ?? 0.68) * 100}%`, display: "flex", justifyContent: "center", transform: `scale(${0.82 + k * 0.18})` }}>
-      <div style={{ fontFamily, fontWeight: 800, fontSize: cfg.size ?? 84, lineHeight: 1.1, textAlign: "center", color: "#FFFFFF", textShadow: "0 8px 0 rgba(0,0,0,0.28)", ...stroke(16) }}>
-        {current.words.map((w, i) => <span key={i} style={{ color: w.hl ? cfg.highlight ?? "#FFD23F" : "#FFFFFF" }}>{i ? " " : ""}{w.w}</span>)}
+      <div style={{ fontFamily: fontOf(st), fontWeight: cs.font === "round" ? 800 : 400, fontSize: (cfg.size ?? 84) * cs.size, lineHeight: sharp ? 1.35 : 1.1, textAlign: "center", color: cs.color, textTransform: cs.uppercase ? "uppercase" : "none", textShadow: sharp ? "6px 6px 0 rgba(0,0,0,0.6)" : cs.color === "#FFFFFF" || cs.color === "#FFFDF6" ? "0 8px 0 rgba(0,0,0,0.28)" : "none", ...stroke(sharp ? 12 : 16, cs.stroke) }}>
+        {current.words.map((w, i) => <span key={i} style={{ color: w.hl ? cfg.highlight ?? cs.highlight : cs.color }}>{i ? " " : ""}{w.w}</span>)}
       </div>
     </div>
   );
 };
 
-const Title: React.FC<{ text: string; t: number }> = ({ text, t }) => {
+const Title: React.FC<{ text: string; t: number; st: StyleSpec }> = ({ text, t, st }) => {
   const k = pop((t - 0.1) / 0.3);
   if (k <= 0) return null;
   return (
     <div style={{ position: "absolute", left: 60, right: 60, top: "11%", display: "flex", justifyContent: "center", transform: `scale(${k}) rotate(-2deg)` }}>
-      <div style={{ fontFamily, fontWeight: 800, fontSize: text.length > 16 ? 104 : 136, lineHeight: 1.02, textAlign: "center", color: "#FFD23F", textShadow: "0 12px 0 rgba(0,0,0,0.3)", ...stroke(22) }}>{text}</div>
+      <div style={{ fontFamily: fontOf(st), fontWeight: st.captions.font === "round" ? 800 : 400, fontSize: (text.length > 16 ? 104 : 136) * st.captions.size, lineHeight: 1.1, textAlign: "center", color: st.titleColor, textShadow: st.captions.font === "marker" ? "none" : "0 12px 0 rgba(0,0,0,0.3)", ...stroke(st.captions.font === "pixel" ? 14 : 22, st.captions.stroke) }}>{text}</div>
     </div>
   );
 };
 
-export const Film: React.FC<{ story: Story; timing: Timing }> = ({ story, timing }) => {
+export const Film: React.FC<{ story: Story; timing: Timing; styleOverride?: string }> = ({ story, timing, styleOverride }) => {
   const frame = useCurrentFrame();
+  const st = React.useMemo(() => resolveStyle(story, styleOverride), [story, styleOverride]);
   const { slots } = React.useMemo(() => buildSlots(story, timing), [story, timing]);
   const slot = slotAt(slots, frame);
   const scene = story.scenes[slot.index];
@@ -76,12 +87,23 @@ export const Film: React.FC<{ story: Story; timing: Timing }> = ({ story, timing
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#CFEAFB" }}>
-      <AbsoluteFill style={whip > 0 ? { filter: `blur(${whip * 22}px)`, transform: `translateX(${dir * whip * 150}px) scale(${1 + whip * 0.1})` } : undefined}>
-        <World story={story} scene={scene} t={t} dur={slot.dur} speaking={speaking} seed={slot.index} />
+      {st.posterize > 1 ? (
+        // retro palettes: only a few brightness steps per colour channel
+        <svg width="0" height="0" style={{ position: "absolute" }}>
+          <filter id="st-poster" colorInterpolationFilters="sRGB">
+            <feComponentTransfer>
+              {(["feFuncR", "feFuncG", "feFuncB"] as const).map((Fn) => <Fn key={Fn} type="discrete" tableValues={Array.from({ length: st.posterize }, (_, i) => (i / (st.posterize - 1)).toFixed(3)).join(" ")} />)}
+            </feComponentTransfer>
+          </filter>
+        </svg>
+      ) : null}
+      <AbsoluteFill style={{ filter: [st.posterize > 1 ? "url(#st-poster)" : "", st.post.saturate !== 1 ? `saturate(${st.post.saturate})` : "", st.post.contrast !== 1 ? `contrast(${st.post.contrast})` : "", whip > 0 ? `blur(${whip * 22}px)` : ""].filter(Boolean).join(" ") || undefined, transform: whip > 0 ? `translateX(${dir * whip * 150}px) scale(${1 + whip * 0.1})` : undefined }}>
+        <World story={story} scene={scene} t={t} dur={slot.dur} speaking={speaking} seed={slot.index} styleName={styleOverride} />
       </AbsoluteFill>
-      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.26) 100%)" }} />
-      {scene.title ? <Title text={scene.title} t={t} /> : null}
-      <Captions slot={slot} t={t} story={story} />
+      {st.post.grain > 0 ? <AbsoluteFill style={{ backgroundImage: GRAIN, opacity: st.post.grain, mixBlendMode: "multiply" }} /> : null}
+      {st.post.vignette > 0 ? <AbsoluteFill style={{ background: `radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,${st.post.vignette}) 100%)` }} /> : null}
+      {scene.title ? <Title text={scene.title} t={t} st={st} /> : null}
+      <Captions slot={slot} t={t} story={story} st={st} />
       {flash > 0 ? <AbsoluteFill style={{ backgroundColor: "#FFFFFF", opacity: flash * 0.85 }} /> : null}
       {timing.voiced ? slots.map((s) => (s.audio ? <Sequence key={s.index} from={s.from} durationInFrames={s.frames}><Audio src={staticFile(s.audio)} /></Sequence> : null)) : null}
       {timing.music ? <Audio src={staticFile("music.mp3")} volume={0.1} loop /> : null}

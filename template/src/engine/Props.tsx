@@ -2,20 +2,30 @@
 // and a dark outline, so it matches the hand-drawn characters.
 import React from "react";
 import * as THREE from "three";
-import { getEmoji, getTextTexture, INK } from "./characters";
+import { getEmoji, getTextTexture } from "./characters";
+import { col, style } from "./style";
 import type { PropSpec, TimeOfDay } from "./types";
 
 type V3 = [number, number, number];
 export type PropCtx = { t: number; p: number; yawAt: (x: number, z: number) => number; leanAt: (x: number, z: number) => number; time: TimeOfDay; tint: string };
 
-const Toon: React.FC<{ c: string }> = ({ c }) => <meshToonMaterial color={c} />;
-const Ink = () => <meshBasicMaterial color={INK} side={THREE.BackSide} />;
+/** The prop material. Which kind depends on the active style. */
+export const Toon: React.FC<{ c: string }> = ({ c }) => {
+  const kind = style().props;
+  const color = col(c);
+  if (kind === "matte") return <meshLambertMaterial color={color} />;
+  if (kind === "flat") return <meshBasicMaterial color={color} toneMapped={false} />;
+  if (kind === "faceted") return <meshStandardMaterial color={color} flatShading roughness={0.85} />;
+  return <meshToonMaterial color={color} />;
+};
+const Ink = () => <meshBasicMaterial color={style().ink} side={THREE.BackSide} toneMapped={false} />;
+const ok = (o: number) => o * style().outline;
 
 /** Box with an exact-width outline. */
 export const Box: React.FC<{ s: V3; p?: V3; r?: V3; c: string; o?: number }> = ({ s, p = [0, 0, 0], r = [0, 0, 0], c, o = 0.045 }) => (
   <group position={p} rotation={r}>
     <mesh castShadow receiveShadow><boxGeometry args={s} /><Toon c={c} /></mesh>
-    {o > 0 ? <mesh><boxGeometry args={[s[0] + o * 2, s[1] + o * 2, s[2] + o * 2]} /><Ink /></mesh> : null}
+    {ok(o) > 0 ? <mesh><boxGeometry args={[s[0] + ok(o) * 2, s[1] + ok(o) * 2, s[2] + ok(o) * 2]} /><Ink /></mesh> : null}
   </group>
 );
 
@@ -23,12 +33,12 @@ export const Box: React.FC<{ s: V3; p?: V3; r?: V3; c: string; o?: number }> = (
 const Shape: React.FC<{ geo: React.ReactElement; c: string; p?: V3; r?: V3; s?: V3; o?: number }> = ({ geo, c, p = [0, 0, 0], r = [0, 0, 0], s = [1, 1, 1], o = 0.05 }) => (
   <group position={p} rotation={r} scale={s}>
     <mesh castShadow receiveShadow>{geo}<Toon c={c} /></mesh>
-    {o > 0 ? <mesh scale={1 + o}>{geo}<Ink /></mesh> : null}
+    {ok(o) > 0 ? <mesh scale={1 + ok(o)}>{geo}<Ink /></mesh> : null}
   </group>
 );
 
 const Flat: React.FC<{ w: number; d: number; c: string; y?: number }> = ({ w, d, c, y = 0.02 }) => (
-  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]} receiveShadow><planeGeometry args={[w, d]} /><meshStandardMaterial color={c} roughness={1} /></mesh>
+  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]} receiveShadow><planeGeometry args={[w, d]} /><meshStandardMaterial color={col(c)} roughness={1} /></mesh>
 );
 
 const rand = (seed: number) => {
@@ -228,9 +238,9 @@ const one = (q: PropSpec, ctx: PropCtx): React.ReactNode => {
     case "campfire": return <Campfire ctx={ctx} />;
     case "board": return <Board q={q} ctx={ctx} />;
     case "sign": return <Sign q={q} ctx={ctx} />;
-    case "field": return <><Flat w={q.w ?? 6} d={q.d ?? 6} c={q.color ?? "#9A6B3F"} />{Array.from({ length: Math.floor((q.w ?? 6) / 0.8) }).map((_, i) => <mesh key={i} position={[-(q.w ?? 6) / 2 + 0.4 + i * 0.8, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.28, (q.d ?? 6) * 0.94]} /><meshStandardMaterial color={q.color2 ?? "#6FBF4A"} roughness={1} /></mesh>)}</>;
+    case "field": return <><Flat w={q.w ?? 6} d={q.d ?? 6} c={q.color ?? "#9A6B3F"} />{Array.from({ length: Math.floor((q.w ?? 6) / 0.8) }).map((_, i) => <mesh key={i} position={[-(q.w ?? 6) / 2 + 0.4 + i * 0.8, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[0.28, (q.d ?? 6) * 0.94]} /><meshStandardMaterial color={col(q.color2 ?? "#6FBF4A")} roughness={1} /></mesh>)}</>;
     case "road": return <Flat w={q.w ?? 4} d={q.d ?? 40} c={q.color ?? "#B9B2A3"} y={0.015} />;
-    case "pond": return <><mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}><circleGeometry args={[(q.w ?? 4) / 2 + 0.2, 32]} /><meshStandardMaterial color="#D9C79A" roughness={1} /></mesh><mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}><circleGeometry args={[(q.w ?? 4) / 2, 32]} /><meshStandardMaterial color={q.color ?? "#5BB8E8"} roughness={0.3} /></mesh></>;
+    case "pond": return <><mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}><circleGeometry args={[(q.w ?? 4) / 2 + 0.2, 32]} /><meshStandardMaterial color={col("#D9C79A")} roughness={1} /></mesh><mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}><circleGeometry args={[(q.w ?? 4) / 2, 32]} /><meshStandardMaterial color={col(q.color ?? "#5BB8E8")} roughness={0.3} /></mesh></>;
     case "mountain": return <><mesh position={[0, (q.h ?? 22) / 2, 0]}><coneGeometry args={[q.w ?? 18, q.h ?? 22, 6]} /><Toon c={q.color ?? "#8FA3B8"} /></mesh><mesh position={[0, (q.h ?? 22) * 0.86, 0]}><coneGeometry args={[(q.w ?? 18) * 0.29, (q.h ?? 22) * 0.29, 6]} /><Toon c="#FFFFFF" /></mesh></>;
     case "block": return <Box s={[q.w ?? 1, q.h ?? 1, q.d ?? 1]} p={[0, (q.h ?? 1) / 2, 0]} c={q.color ?? "#D9D2C5"} />;
     case "ball": return <Shape geo={<sphereGeometry args={[(q.w ?? 1) / 2, 24, 16]} />} c={q.color ?? "#E2574C"} p={[0, (q.w ?? 1) / 2, 0]} o={0.04} />;

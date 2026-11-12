@@ -2,7 +2,7 @@
 
 These videos work because they are fables: a tiny world, a clear contrast, a turn, and a rule the viewer can repeat to a friend. The animation is simple on purpose. The script does the work.
 
-## The shape (about 20 scenes, 80 to 100 seconds)
+## The shape (about 20 scenes, 80 to 90 seconds, never over 90)
 
 | Beat | Scenes | Job |
 |---|---|---|

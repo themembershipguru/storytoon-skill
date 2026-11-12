@@ -4,7 +4,9 @@ import * as THREE from "three";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { getCloud, getEmoji, getGround, getSky, getSprite, SPRITE_ASPECT } from "./characters";
-import { PropView, type PropCtx } from "./Props";
+import { PropView, Toon, type PropCtx } from "./Props";
+import { HAND, LowPolyBody } from "./LowPoly";
+import { col, GROUND_COLOR, resolveStyle, setStyle, style } from "./style";
 import { HEIGHT, WIDTH } from "./timing";
 import type { ActorSpec, CameraSpec, Face, Pose, SceneSpec, Story, TimeOfDay, Vec2 } from "./types";
 
@@ -106,7 +108,9 @@ const Actor: React.FC<{ a: ActorSpec; story: Story; t: number; p: number; speaki
   const blink = (t * 30 + hash(a.who) * 13) % 96 < 4;
   const face = a.face ?? DEFAULT_FACE[act] ?? "neutral";
   const pose = a.pose ?? DEFAULT_POSE[act] ?? (a.hold ? "hold" : "down");
-  const sprite = getSprite(a.who, spec, { face, pose, mouth, blink, hold: a.hold });
+  const solid = style().characters === "lowpoly";
+  const sprite = solid ? null : getSprite(a.who, spec, { face, pose, mouth, blink, hold: a.hold });
+  const held = solid && a.hold ? getEmoji(a.hold) : null;
   const h = size, w = size * SPRITE_ASPECT;
   const yaw = yawAt(x, z);
   const bubble = a.bubble ?? (act === "sleep" ? "💤" : undefined);
@@ -117,16 +121,27 @@ const Actor: React.FC<{ a: ActorSpec; story: Story; t: number; p: number; speaki
     <group position={[x + dx, 0, z]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
         <circleGeometry args={[size * 0.3 * (1 - y * 0.6), 24]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.2} depthWrite={false} />
+        <meshBasicMaterial color="#000000" transparent opacity={style().shadows ? 0.2 : 0.07} depthWrite={false} />
       </mesh>
+      {solid ? (
+        // real 3D body: turns most of the way towards the camera, and a little towards the middle when flipped
+        <group rotation={[0, yaw * 0.75 + (a.flip ? -0.3 : 0.3) * (pose === "point" ? 0.3 : 1), 0]}>
+          <group position={[0, y, 0]} rotation={[0, 0, tilt]} scale={[sx * grow * (a.scale ?? 1), sy * grow * (a.scale ?? 1), grow * (a.scale ?? 1)]}>
+            <LowPolyBody spec={spec} face={face} pose={pose} mouth={mouth} blink={blink} />
+            {held ? <mesh position={HAND}><planeGeometry args={[0.55, 0.55]} /><meshBasicMaterial map={held.map} transparent alphaTest={0.04} side={THREE.DoubleSide} toneMapped={false} /></mesh> : null}
+          </group>
+        </group>
+      ) : null}
       <group rotation={[0, yaw, 0]}>
         <group rotation={[-leanAt(x, z), 0, 0]}>
+        {sprite ? (
         <group position={[0, y, 0]} rotation={[0, 0, tilt]} scale={[sx * grow * (a.flip ? -1 : 1), sy * grow, 1]}>
           <mesh position={[0, h / 2, 0]} castShadow customDepthMaterial={sprite.depth}>
             <planeGeometry args={[w, h]} />
             <meshBasicMaterial map={sprite.map} transparent alphaTest={0.04} color={tint} side={THREE.DoubleSide} toneMapped={false} />
           </mesh>
         </group>
+        ) : null}
         {bub && bubGrow > 0 ? (
           <mesh position={[0, h * 1.02 + 0.42 + Math.sin(t * 2.6 + ph) * 0.05, 0.02]} scale={bubGrow * 0.72 * (a.scale ?? 1)}>
             <planeGeometry args={[1, 1]} />
@@ -141,11 +156,16 @@ const Actor: React.FC<{ a: ActorSpec; story: Story; t: number; p: number; speaki
 
 const CLOUDS: [number, number, number, number][] = [[-60, 30, -90, 26], [25, 38, -110, 34], [80, 27, -70, 22], [-95, 34, -30, 28], [110, 40, -10, 30], [-30, 44, -130, 30], [60, 32, 90, 26], [-80, 36, 80, 30]];
 
-export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: number; speaking: boolean; seed: number }> = ({ story, scene, t, dur, speaking, seed }) => {
+export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: number; speaking: boolean; seed: number; styleName?: string }> = ({ story, scene, t, dur, speaking, seed, styleName }) => {
+  const st = resolveStyle(story, styleName);
+  setStyle(st);
   const p = Math.min(1, Math.max(0, t / Math.max(0.01, dur)));
   const set = scene.set ? story.sets?.[scene.set] : undefined;
   const time: TimeOfDay = scene.time ?? set?.time ?? "day";
-  const look = LOOKS[time] ?? LOOKS.day;
+  const base = LOOKS[time] ?? LOOKS.day;
+  const skyPair = st.sky?.[time];
+  const look = { ...base, top: skyPair?.[0] ?? base.top, horizon: skyPair?.[1] ?? base.horizon, tint: st.evenLight ? "#FFFFFF" : base.tint };
+  const px = st.pixel > 1 ? Math.round(st.pixel) : 1;
   const ground = scene.ground ?? set?.ground ?? "grass";
   const cam = cameraPose(scene, p);
   const yawAt = (x: number, z: number) => Math.atan2(cam.pos[0] - x, cam.pos[2] - z);
@@ -159,9 +179,11 @@ export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: n
   const drift = (seed * 7 + t) * 0.35;
 
   return (
-    <ThreeCanvas width={WIDTH} height={HEIGHT} shadows flat camera={{ fov: 50, near: 0.1, far: 500 }} style={{ position: "absolute", inset: 0 }}>
+    // pixel styles render a small picture and blow it up with hard edges
+    <div style={{ position: "absolute", left: 0, top: 0, width: WIDTH / px, height: HEIGHT / px, transform: `scale(${px})`, transformOrigin: "0 0", imageRendering: px > 1 ? "pixelated" : "auto" }}>
+    <ThreeCanvas key={px} width={WIDTH / px} height={HEIGHT / px} shadows={st.shadows} flat dpr={1} gl={{ antialias: px === 1 }} camera={{ fov: 50, near: 0.1, far: 500 }} style={{ position: "absolute", inset: 0 }}>
       <color attach="background" args={[look.horizon]} />
-      <fog attach="fog" args={[look.horizon, 38, 150]} />
+      {st.fog ? <fog attach="fog" args={[look.horizon, 38, 150]} /> : null}
       <Rig pos={cam.pos} look={cam.look} />
       <ambientLight color={look.amb} intensity={look.ambI} />
       <directionalLight
@@ -183,7 +205,7 @@ export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: n
         <sphereGeometry args={[300, 24, 16]} />
         <meshBasicMaterial map={getSky(look.top, look.horizon)} side={THREE.BackSide} fog={false} depthWrite={false} toneMapped={false} />
       </mesh>
-      {CLOUDS.map(([cx, cy, cz, s], i) => {
+      {(st.clouds ? CLOUDS : []).map(([cx, cy, cz, s], i) => {
         const x = ((cx + drift + 150) % 300) - 150;
         return (
           <mesh key={i} position={[x, cy, cz]} rotation={[0, Math.atan2(cam.pos[0] - x, cam.pos[2] - cz), 0]}>
@@ -195,10 +217,11 @@ export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: n
       {time === "night" ? <mesh position={[-40, 60, -160]}><circleGeometry args={[9, 32]} /><meshBasicMaterial color="#F4F1D8" fog={false} toneMapped={false} /></mesh> : null}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[360, 360]} />
-        <meshStandardMaterial map={getGround(ground)} roughness={1} />
+        {st.ground === "plain" ? (st.props === "flat" ? <meshBasicMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} toneMapped={false} /> : <meshStandardMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} roughness={1} />) : <meshStandardMaterial map={getGround(ground)} roughness={1} />}
       </mesh>
       {props.map((q, i) => <PropView key={`${scene.set ?? ""}-${i}-${q.type}`} q={q} ctx={ctx} />)}
       {(scene.actors ?? []).map((a, i) => <Actor key={`${a.who}-${i}`} a={a} story={story} t={t} p={p} speaking={speaking} yawAt={yawAt} leanAt={leanAt} tint={look.tint} index={i} />)}
     </ThreeCanvas>
+    </div>
   );
 };
