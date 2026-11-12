@@ -38,7 +38,7 @@ On a scene or a set:
 "ambience": { "q": "gentle waves", "vol": 0.12 }
 ```
 
-- `at`: seconds into the scene. `vol`: 0 to 1 (effects default 0.45, ambience 0.18, music 0.32). `max`: longest an effect may play, in seconds.
+- `at`: seconds into the scene. `vol`: 0 to 1 (effects default 0.45, ambience 0.18, music 0.18; music drops to 40% of that while the narrator speaks). `max`: longest an effect may play, in seconds.
 - `ambience` on a set loops under every scene that uses the set, and plays as one continuous sound across consecutive scenes.
 - `"sound": false` on a scene silences its automatic effects.
 - Don't like what came back? Add `"pick": 2` (or 3, 4...) to take the next search result, or change the words.

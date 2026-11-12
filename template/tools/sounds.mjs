@@ -81,7 +81,7 @@ const timeline = cues.filter((c) => {
   return true;
 });
 
-const musicSpec = story.music === false ? null : cue({ q: "acoustic", vol: 0.32 }, story.music ?? {});
+const musicSpec = story.music === false ? null : cue({ q: "acoustic", vol: 0.18 }, story.music ?? {});
 
 // ---------- Openverse ----------
 const search = async (q, music) => {

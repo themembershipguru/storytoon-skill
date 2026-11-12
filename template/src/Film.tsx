@@ -153,8 +153,8 @@ export const Film: React.FC<{ story: Story; timing: Timing; sounds?: Sounds; sty
           src={staticFile(timing.music ? "music.mp3" : sounds!.music!.file)}
           loop
           volume={(f) => {
-            const base = timing.music ? 0.3 : sounds!.music!.vol;
-            const duck = 1 - 0.5 * (musicLevel[Math.min(total - 1, f)] ?? 0);
+            const base = timing.music ? 0.18 : sounds!.music!.vol;
+            const duck = 1 - 0.6 * (musicLevel[Math.min(total - 1, f)] ?? 0);
             const fade = Math.min(1, f / FPS, (total - f) / (FPS * 2));
             return Math.max(0, base * duck * fade);
           }}
