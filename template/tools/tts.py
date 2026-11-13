@@ -30,16 +30,20 @@ async def main():
     out = []
     for line in job["lines"]:
         last = None
-        for _ in range(3):
+        # Microsoft's unofficial endpoint is flaky in short bursts (a one-line "Investors
+        # noticed." can fail while a long sentence right next to it succeeds), so retry more
+        # than once would suggest, with a growing wait, before giving up on a line.
+        for attempt in range(6):
             try:
                 out.append(await speak(line, job.get("rate", "+0%"), job.get("pitch", "+0Hz")))
                 last = None
                 break
-            except Exception as err:  # network hiccup: retry
+            except Exception as err:
                 last = err
-                await asyncio.sleep(1.5)
+                await asyncio.sleep(1.2 * (attempt + 1))
         if last:
             raise last
+        await asyncio.sleep(0.35)  # a short gap between lines, so we look less like a burst
     print(json.dumps(out))
 
 
