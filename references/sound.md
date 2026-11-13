@@ -43,6 +43,26 @@ On a scene or a set:
 - `"sound": false` on a scene silences its automatic effects.
 - Don't like what came back? Add `"pick": 2` (or 3, 4...) to take the next search result, or change the words.
 
+## Made-to-order sound with ElevenLabs (optional, paid)
+
+Openverse only *finds* existing recordings, so an unusual sound ("a rocket engine roar", "a sci-fi warning alarm") may not exist there at all. ElevenLabs *generates* music and sound effects from a text prompt instead, which fits a specific scene far better — but it needs the user's own `ELEVENLABS_API_KEY` (in `.env` or the environment) and spends their account's quota per request.
+
+**Ask before turning this on**, unless the user already said to use it: tell them it is paid, spends their ElevenLabs quota, and ask if that is fine (they may share the key with other projects). After `npm run sounds` runs, it prints how much quota that run spent — relay that number to the user.
+
+On the story, for music:
+
+```json
+"music": { "provider": "elevenlabs", "prompt": "tense cinematic synth-wave, driving pulse, no vocals", "vol": 0.16 }
+```
+
+The clip is generated at the video's real length automatically. On any `sfx` or `ambience` cue, the same two fields route that one sound through ElevenLabs instead of Openverse:
+
+```json
+"sfx": { "provider": "elevenlabs", "prompt": "powerful rocket engine ignition roar", "at": 0.15, "vol": 0.42, "max": 2.8 }
+```
+
+A set's `ambience` with a `prompt` and no `max` defaults to a short clip; give it `"max": 20` or more for a loop that does not sound choppy. Prompts are plain sound-design language ("eerie whoosh of air escaping into a vacuum", "soft achievement chime") rather than search keywords, and can be as specific as the scene needs. No credit is required for ElevenLabs audio (it is generated for this video, not someone else's recording), but say in the description that the music and some effects are AI-generated, the same as you would for the AI voice.
+
 ## Getting good results
 
 - Short, plain words find the most: "whoosh", "pop", "coins", "splash", "door", "crowd cheer", "rain". For music, one word works best: "ukulele", "piano", "acoustic", "lofi", "orchestral". Long phrases often match nothing; the tool then retries word by word.

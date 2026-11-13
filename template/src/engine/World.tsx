@@ -63,12 +63,13 @@ export const cameraPose = (scene: SceneSpec, p: number): { pos: V3; look: V3 } =
   let height = shot.h * (cam.shot === "top" ? cam.zoom ?? 1 : 1);
   let az = ((cam.angle ?? 0) * Math.PI) / 180;
   let tx = target[0];
-  if (move === "push") dist *= lerp(1.14, 0.88, e);
-  else if (move === "pull") dist *= lerp(0.86, 1.12, e);
+  // bigger swings than you'd think you need: at a distance, a subtle move reads as none at all
+  if (move === "push") dist *= lerp(1.24, 0.8, e);
+  else if (move === "pull") dist *= lerp(0.78, 1.22, e);
   else dist *= lerp(1.02, 0.97, p); // every shot breathes a little
-  if (move === "orbit") az += lerp(-0.26, 0.26, e);
-  if (move === "pan") tx += lerp(-0.16, 0.16, e) * shot.d;
-  if (move === "rise") height += lerp(0, shot.d * 0.3, e);
+  if (move === "orbit") az += lerp(-0.42, 0.42, e);
+  if (move === "pan") tx += lerp(-0.24, 0.24, e) * shot.d;
+  if (move === "rise") height += lerp(0, shot.d * 0.48, e);
   return {
     pos: [tx + Math.sin(az) * dist, height, target[1] + Math.cos(az) * dist],
     look: [tx, shot.ly, target[1]],

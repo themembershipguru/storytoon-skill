@@ -20,6 +20,14 @@ const libPath = path.join(sfxDir, "library.json");
 const lib = !fresh && fs.existsSync(libPath) ? JSON.parse(fs.readFileSync(libPath, "utf8")) : {};
 const hasFfmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
 
+// Minimal .env reader: fills in process.env from a local .env file, without a dependency.
+// Used only for ELEVENLABS_API_KEY (an optional, paid alternative to Openverse — see below).
+for (const line of (fs.existsSync(path.join(root, ".env")) ? fs.readFileSync(path.join(root, ".env"), "utf8") : "").split("\n")) {
+  const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+  if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+}
+const ELEVEN_KEY = process.env.ELEVENLABS_API_KEY;
+
 const API = "https://api.openverse.org/v1/audio/";
 const OK_LICENSES = new Set(["cc0", "pdm", "by"]);
 const AUDIO_TYPES = new Set(["mp3", "mp32", "ogg", "wav", "flac", "m4a"]);
@@ -83,6 +91,44 @@ const timeline = cues.filter((c) => {
 
 const musicSpec = story.music === false ? null : cue({ q: "acoustic", vol: 0.18 }, story.music ?? {});
 
+// Real video length, so an ElevenLabs music request is sized to match (not guessed).
+const timingPath = path.join(root, "src", "timing.json");
+const timing = fs.existsSync(timingPath) ? JSON.parse(fs.readFileSync(timingPath, "utf8")) : null;
+const videoSeconds =
+  timing?.scenes?.length === story.scenes.length
+    ? timing.scenes.reduce((n, s, i) => n + s.dur + 0.22 + (story.scenes[i].hold ?? 0), 0)
+    : story.scenes.length * 4; // voice not generated yet: a rough guess, good enough to not be wildly off
+
+// ---------- ElevenLabs (optional, paid: needs ELEVENLABS_API_KEY) ----------
+// Music and sound effects made to order from a text prompt, instead of searched for on Openverse.
+// Say "use elevenlabs for the music/sound" in the story (or "provider": "elevenlabs" on a cue) to use
+// this; it needs the user's own key and spends their account's quota, so tell them it is paid before
+// turning it on, and report what the call actually used afterward (this script prints that; relay it).
+const elevenHeaders = () => ({ "xi-api-key": ELEVEN_KEY, "Content-Type": "application/json" });
+let elevenQuotaBefore = null;
+const elevenQuota = async () => {
+  try {
+    const r = await fetch("https://api.elevenlabs.io/v1/user/subscription", { headers: { "xi-api-key": ELEVEN_KEY } });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return { used: d.character_count, limit: d.character_limit };
+  } catch {
+    return null;
+  }
+};
+const elevenMusic = async (prompt, seconds) => {
+  const ms = Math.round(Math.min(180, Math.max(5, seconds)) * 1000);
+  const r = await fetch("https://api.elevenlabs.io/v1/music", { method: "POST", headers: elevenHeaders(), body: JSON.stringify({ prompt, music_length_ms: ms }) });
+  if (!r.ok) throw new Error(`ElevenLabs music said ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  return Buffer.from(await r.arrayBuffer());
+};
+const elevenSfx = async (prompt, seconds) => {
+  const r = await fetch("https://api.elevenlabs.io/v1/sound-generation", { method: "POST", headers: elevenHeaders(), body: JSON.stringify({ text: prompt, duration_seconds: Math.min(22, Math.max(0.5, seconds)) }) });
+  if (!r.ok) throw new Error(`ElevenLabs sound-generation said ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  return Buffer.from(await r.arrayBuffer());
+};
+const wantsEleven = (spec) => spec.provider === "elevenlabs" || (spec.prompt && !spec.q);
+
 // ---------- Openverse ----------
 const search = async (q, music) => {
   const params = new URLSearchParams({ q, license: "cc0,by,pdm", page_size: "20", source: music ? "jamendo" : "freesound" });
@@ -116,6 +162,34 @@ const clean = (raw, out, { music, ambient, max }) => {
 };
 
 const fetchSound = async (spec, music = false) => {
+  const kind = music ? "music" : spec.ambient ? "amb" : "sfx";
+  if (wantsEleven(spec)) {
+    const prompt = spec.prompt ?? spec.q;
+    const key = `el-${kind}|${prompt}`;
+    const known = lib[key];
+    if (known && fs.existsSync(path.join(sfxDir, known.file))) return known;
+    if (!ELEVEN_KEY) {
+      console.log(`\n  "${prompt}" asked for ElevenLabs, but there is no ELEVENLABS_API_KEY (in .env or the environment). Add one, or drop "provider": "elevenlabs" to use Openverse instead.`);
+      return null;
+    }
+    const file = `el-${kind}-${slug(prompt)}.mp3`;
+    const raw = path.join(sfxDir, `.raw-el-${slug(prompt)}`);
+    try {
+      elevenQuotaBefore ??= await elevenQuota();
+      const seconds = music ? videoSeconds : spec.max ?? 3;
+      const buf = music ? await elevenMusic(prompt, seconds) : await elevenSfx(prompt, seconds);
+      fs.writeFileSync(raw, buf);
+      clean(raw, path.join(sfxDir, file), { music, ambient: spec.ambient, max: spec.max ?? seconds });
+      const entry = { file, title: prompt, creator: "ElevenLabs (AI-generated)", license: "ElevenLabs", needsCredit: false, elevenlabs: true };
+      lib[key] = entry;
+      return entry;
+    } catch (err) {
+      console.log(`\n  ElevenLabs failed for "${prompt}": ${String(err.message || err).slice(0, 160)}`);
+      return null;
+    } finally {
+      fs.rmSync(raw, { force: true });
+    }
+  }
   const key = `${music ? "music" : spec.ambient ? "amb" : "sfx"}|${spec.q}|${spec.pick ?? 1}`;
   const known = lib[key];
   if (known && fs.existsSync(path.join(sfxDir, known.file))) return known;
@@ -162,24 +236,26 @@ const used = new Map();
 const out = { music: null, cues: [] };
 const missing = [];
 
+const label = (spec) => spec.prompt ?? spec.q;
+
 if (musicSpec) {
-  process.stdout.write(`music: "${musicSpec.q}" ... `);
+  process.stdout.write(`music: "${label(musicSpec)}"${wantsEleven(musicSpec) ? " (ElevenLabs)" : ""} ... `);
   const m = await fetchSound(musicSpec, true);
   if (m) { out.music = { file: `sfx/${m.file}`, vol: musicSpec.vol }; used.set(m.file, m); console.log(m.title); }
-  else { console.log("nothing usable found"); missing.push(`music "${musicSpec.q}"`); }
+  else { console.log("nothing usable found"); missing.push(`music "${label(musicSpec)}"`); }
 }
-const queries = [...new Map(timeline.map((c) => [`${c.ambient ? "a" : "s"}|${c.q}|${c.pick ?? 1}`, c])).values()];
+const queries = [...new Map(timeline.map((c) => [`${c.ambient ? "a" : "s"}|${label(c)}|${c.pick ?? 1}`, c])).values()];
 const got = new Map();
 for (const c of queries) {
-  process.stdout.write(`${c.ambient ? "ambience" : "sfx"}: "${c.q}" ... `);
+  process.stdout.write(`${c.ambient ? "ambience" : "sfx"}: "${label(c)}"${wantsEleven(c) ? " (ElevenLabs)" : ""} ... `);
   const s = await fetchSound(c);
-  got.set(`${c.ambient ? "a" : "s"}|${c.q}|${c.pick ?? 1}`, s);
+  got.set(`${c.ambient ? "a" : "s"}|${label(c)}|${c.pick ?? 1}`, s);
   console.log(s ? s.title : "nothing usable found");
-  if (!s) missing.push(`"${c.q}"`);
+  if (!s) missing.push(`"${label(c)}"`);
   await sleep(300);
 }
 for (const c of timeline) {
-  const s = got.get(`${c.ambient ? "a" : "s"}|${c.q}|${c.pick ?? 1}`);
+  const s = got.get(`${c.ambient ? "a" : "s"}|${label(c)}|${c.pick ?? 1}`);
   if (!s) continue;
   used.set(s.file, s);
   out.cues.push({ scene: c.scene, at: c.at, file: `sfx/${s.file}`, vol: c.vol, ...(c.ambient ? { ambient: true } : { max: c.max }) });
@@ -188,10 +264,20 @@ for (const c of timeline) {
 fs.writeFileSync(libPath, JSON.stringify(lib, null, 1));
 fs.writeFileSync(path.join(root, "src", "sounds.json"), JSON.stringify(out, null, 1));
 
-const lines = [...used.values()].map((s) => `"${s.title}" by ${s.creator}, ${s.license}${s.needsCredit ? "" : " (no credit required)"} - ${s.page}`);
+if (elevenQuotaBefore) {
+  const after = await elevenQuota();
+  if (after) console.log(`\nElevenLabs quota: ${elevenQuotaBefore.used} -> ${after.used} of ${after.limit} used this billing period (this run spent ${after.used - elevenQuotaBefore.used}).`);
+}
+
+const openverseItems = [...used.values()].filter((s) => !s.elevenlabs);
+const elevenItems = [...used.values()].filter((s) => s.elevenlabs);
+const lines = openverseItems.map((s) => `"${s.title}" by ${s.creator}, ${s.license}${s.needsCredit ? "" : " (no credit required)"} - ${s.page}`);
 fs.mkdirSync(path.join(root, "out"), { recursive: true });
 const credits = path.join(root, "out", `${story.id || "story"}-credits.txt`);
-fs.writeFileSync(credits, ["Sounds and music via Openverse (openverse.org):", ...lines, ""].join("\n"));
-console.log(`\n${out.cues.length} sound cues${out.music ? " + music" : ""}. Credits: ${path.relative(root, credits)} (put the CC BY lines in the video description).`);
+const sections = [];
+if (lines.length) sections.push(["Sounds and music via Openverse (openverse.org):", ...lines]);
+if (elevenItems.length) sections.push(["AI-generated with ElevenLabs (no credit required, but say it's AI-generated):", ...elevenItems.map((s) => `"${s.title}"`)]);
+fs.writeFileSync(credits, sections.map((sec) => sec.join("\n")).join("\n\n") + "\n");
+console.log(`\n${out.cues.length} sound cues${out.music ? " + music" : ""}. Credits: ${path.relative(root, credits)}${lines.length ? " (put the CC BY lines in the video description)" : ""}.`);
 if (missing.length) console.log(`Not found: ${missing.join(", ")}. Try other words for those in story.json.`);
 if (!hasFfmpeg) console.log("ffmpeg not found: sounds were used as downloaded (no trimming or volume levelling).");
