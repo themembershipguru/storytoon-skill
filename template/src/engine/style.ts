@@ -257,6 +257,25 @@ export const BUILTIN: Record<string, StyleSpec> = {
     sky: { day: ["#3E9BEA", "#CFEAFF"], sunset: ["#6A4FB0", "#FFB37A"], night: ["#0A1030", "#2C3F7A"] },
     post: p({ saturate: 1.08, contrast: 1.04, vignette: 0.28 }),
   },
+  orbit: {
+    ...toon,
+    characters: "smooth",
+    ink: "rgba(0,0,0,0)",
+    features: "#0B0F1A",
+    props: "soft",
+    roughness: 0.28,
+    outline: 0,
+    colors: { mix: "#0A1030", amount: 0.1, saturation: 1.1 },
+    ground: "textured",
+    groundColor: "#232B3D",
+    sky: { day: ["#050714", "#0B1230"], sunset: ["#050714", "#141226"], night: ["#020208", "#070A1C"] },
+    evenLight: true,
+    fog: false,
+    clouds: false,
+    post: p({ saturate: 1.12, contrast: 1.12, vignette: 0.42 }),
+    captions: { font: "round", color: "#F4F8FF", stroke: "#060A18", highlight: "#4FE0FF", size: 1, uppercase: false },
+    titleColor: "#4FE0FF",
+  },
 };
 
 const merge = (base: StyleSpec, over: Partial<StyleSpec>): StyleSpec => ({
@@ -306,4 +325,4 @@ export const col = (hex: string): string => {
   return `#${tmp.getHexString()}`;
 };
 
-export const GROUND_COLOR: Record<string, string> = { cobble: "#E3D2AE", grass: "#7CC65A", sand: "#E9C98C", snow: "#F2F7FC", soil: "#9A6B3F", wood: "#C99A5B" };
+export const GROUND_COLOR: Record<string, string> = { cobble: "#E3D2AE", grass: "#7CC65A", sand: "#E9C98C", snow: "#F2F7FC", soil: "#9A6B3F", wood: "#C99A5B", metal: "#3A4452", concrete: "#9AA0A6" };

@@ -24,6 +24,7 @@ The same `story.json` can be rendered in different looks. Set it with one line a
 | `cgi` | smooth, glossy 3D characters and props, soft shading | the closest to an animated-film look |
 | `clay` | smooth, matte 3D like modelling clay, soft pastel colours, a little grain | cosy, kids, feel-good stories |
 | `bricks` | blocky toy figures, shiny plastic, studs on blocks and a studded baseplate ground | playful, building and growth stories |
+| `orbit` | dark navy everywhere (ignores time of day), smooth glossy characters, white captions with cyan highlights, no outlines; works with the space tools below | tech, AI, startups, space, "what if" explainers |
 
 Try a style without editing the story:
 

@@ -6,7 +6,7 @@ export type Face = "neutral" | "happy" | "joy" | "sad" | "shocked" | "angry" | "
 export type Pose = "down" | "up" | "point" | "hips" | "hold";
 export type Act = "idle" | "talk" | "hop" | "walk" | "shake" | "cheer" | "sleep" | "work" | "nod";
 export type TimeOfDay = "day" | "sunset" | "night";
-export type GroundKind = "cobble" | "grass" | "sand" | "wood" | "snow" | "soil";
+export type GroundKind = "cobble" | "grass" | "sand" | "wood" | "snow" | "soil" | "metal" | "concrete";
 
 export type CastSpec = {
   kind?: "person" | "owl";
@@ -50,6 +50,7 @@ export type PropSpec = {
   lines?: string[];
   emoji?: string;
   float?: boolean;
+  flame?: boolean; // rocket: false removes the exhaust flame
   waves?: boolean; // pond: false keeps the water still
   enter?: number;
   scatter?: { count: number; area: [number, number, number, number]; seed?: number };
@@ -63,13 +64,14 @@ export type CameraSpec = {
   zoom?: number; // 1 = default distance, 0.8 = closer
 };
 
-export type SetSpec = { ground?: GroundKind; time?: TimeOfDay; props?: PropSpec[]; ambience?: SoundRef | SoundRef[] };
+export type SetSpec = { ground?: GroundKind; time?: TimeOfDay; props?: PropSpec[]; ambience?: SoundRef | SoundRef[]; space?: boolean };
 
 export type SceneSpec = {
   say: string; // narration. *stars* mark highlighted caption words.
   set?: string; // key in story.sets
   ground?: GroundKind;
   time?: TimeOfDay;
+  space?: boolean; // outer space: starfield, no ground, no sun
   camera?: CameraSpec;
   actors?: ActorSpec[];
   props?: PropSpec[];

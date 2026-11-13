@@ -38,9 +38,11 @@ Make every character different in at least outfit colour and one head feature.
 
 ## Sets
 
-A set is shared scenery: `{ "ground": ..., "time": ..., "props": [ ... ] }`. A scene uses it with `"set": "forest"` and can add its own `props` on top and override `time` or `ground`.
+A set is shared scenery: `{ "ground": ..., "time": ..., "props": [ ... ] }`. A scene uses it with `"set": "forest"` and can add its own `props` on top and override `time`, `ground` or `space`.
 
-`ground`: `grass`, `cobble`, `sand`, `wood`, `snow`, `soil`. `time`: `day`, `sunset`, `night`.
+`ground`: `grass`, `cobble`, `sand`, `wood`, `snow`, `soil`, `metal` (indoor floor, grid lines), `concrete` (pads, pavement). `time`: `day`, `sunset`, `night`.
+
+`space: true` (on a set or a scene) turns the whole scene into outer space: a starfield instead of sky, no ground plane, no fog or clouds, a dim ambient light. Actors and props still place with `at`/`y` as normal, just with nothing under their feet, so it reads as floating. Good for the `orbit` style (see `styles.md`), but works with any style.
 
 ## Scene
 
@@ -116,6 +118,12 @@ Every prop takes `at`, and optionally `rot` (degrees), `scale`, `color`, `y` (he
 | `pond` | water with a sandy rim. 6 or wider gets rolling waves, foam and sparkles; pair it with a waves `ambience` | `w`, `color`, `waves: false` for still water |
 | `block`, `ball`, `pillar` | plain shapes for anything else | `w`, `h`, `d`, `color` |
 | `emoji` | any emoji or short word as a standing card | `emoji: "🐄"`, `float: true` to hover, `y` |
+| `launchtower` | tall lattice launch gantry with a blinking light | `h`, `w`, `color` |
+| `rocket` | rocket on the pad: body, nose, fins, animated flame | `h`, `w`, `color`, `color2`, `flame: false` to turn the flame off |
+| `servers` | a rack of server units with blinking status lights | `count`, `w`, `h`, `color` |
+| `hologram` | a slowly rotating wireframe globe with orbit rings | `w` (diameter), `color`, `color2` |
+| `earth3d` | a full, slowly turning Earth sphere with a thin atmosphere glow; for space shots | `w` (diameter) |
+| `wall` | a flat backdrop panel, for a simple indoor wall behind an office or lab | `w`, `h`, `color` |
 
 The `emoji` prop is the escape hatch: animals, food, tools, vehicles and money all exist as emoji. Scale them (`"scale": 1.5`) to match the characters.
 

@@ -597,6 +597,36 @@ export const getGround = (kind: string): THREE.CanvasTexture => {
     c.fillStyle = "#9A6B3F";
     c.fillRect(0, 0, n, n);
     speckle(220, ["#8A5D35", "#A97848"], 4, 12);
+  } else if (kind === "concrete") {
+    c.fillStyle = "#A7ACB2";
+    c.fillRect(0, 0, n, n);
+    speckle(260, ["#9CA1A8", "#B3B8BE"], 2, 7);
+    c.strokeStyle = "rgba(90,95,100,0.35)";
+    c.lineWidth = 3;
+    for (const i of [0.25, 0.5, 0.75]) {
+      c.beginPath();
+      c.moveTo(i * n, 0);
+      c.lineTo(i * n, n);
+      c.stroke();
+    }
+  } else if (kind === "metal") {
+    c.fillStyle = "#30394A";
+    c.fillRect(0, 0, n, n);
+    const cell = n / 8;
+    c.strokeStyle = "rgba(130,160,210,0.35)";
+    c.lineWidth = 2;
+    for (let i = 1; i < 8; i++) {
+      c.beginPath();
+      c.moveTo(i * cell, 0);
+      c.lineTo(i * cell, n);
+      c.stroke();
+      c.beginPath();
+      c.moveTo(0, i * cell);
+      c.lineTo(n, i * cell);
+      c.stroke();
+    }
+    c.fillStyle = "rgba(90,110,150,0.5)";
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * cell + cell * 0.46, j * cell + cell * 0.46, cell * 0.08, cell * 0.08);
   } else {
     c.fillStyle = "#C99A5B";
     c.fillRect(0, 0, n, n);
@@ -631,6 +661,59 @@ export const getSky = (top: string, horizon: string): THREE.CanvasTexture => {
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
   cache.set(key, { map, depth: new THREE.MeshDepthMaterial() });
+  return map;
+};
+
+/** A field of small stars for a space background sphere, layered over the night sky. */
+export const getStars = (): THREE.CanvasTexture => {
+  const hit = cache.get("stars");
+  if (hit) return hit.map;
+  const canvas = makeCanvas(1024, 1024);
+  const c = canvas.getContext("2d")!;
+  let seed = 11;
+  const rnd = () => ((seed = (seed * 48271) % 2147483647) / 2147483647);
+  for (let i = 0; i < 900; i++) {
+    const x = rnd() * 1024, y = rnd() * 1024;
+    const r = rnd() < 0.08 ? 1.6 + rnd() * 1.6 : 0.5 + rnd() * 0.9;
+    c.beginPath();
+    c.arc(x, y, r, 0, TAU);
+    c.fillStyle = rnd() < 0.15 ? "#BFE0FF" : "#FFFFFF";
+    c.globalAlpha = 0.5 + rnd() * 0.5;
+    c.fill();
+  }
+  c.globalAlpha = 1;
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  cache.set("stars", { map, depth: new THREE.MeshDepthMaterial() });
+  return map;
+};
+
+/** A simple painted globe: blue ocean with green/tan continent blobs, for the "earth3d" prop. */
+export const getEarth = (): THREE.CanvasTexture => {
+  const hit = cache.get("earth");
+  if (hit) return hit.map;
+  const w = 1024, h = 512;
+  const canvas = makeCanvas(w, h);
+  const c = canvas.getContext("2d")!;
+  c.fillStyle = "#1D5FB8";
+  c.fillRect(0, 0, w, h);
+  let seed = 23;
+  const rnd = () => ((seed = (seed * 48271) % 2147483647) / 2147483647);
+  c.fillStyle = "#3FAE5C";
+  for (let i = 0; i < 26; i++) {
+    const x = rnd() * w, y = h * 0.18 + rnd() * h * 0.64, r = 30 + rnd() * 90;
+    c.beginPath();
+    c.ellipse(x, y, r, r * (0.5 + rnd() * 0.4), rnd() * TAU, 0, TAU);
+    c.fill();
+  }
+  c.fillStyle = "rgba(255,255,255,0.75)";
+  for (const y of [0, h * 0.06, h - 1, h * 0.94]) {
+    c.fillRect(0, y - 14, w, 28);
+  }
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.wrapS = THREE.RepeatWrapping;
+  cache.set("earth", { map, depth: new THREE.MeshDepthMaterial() });
   return map;
 };
 

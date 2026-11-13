@@ -3,7 +3,7 @@ import React from "react";
 import * as THREE from "three";
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
-import { getCloud, getEmoji, getGround, getSky, getSprite, getStuds, SPRITE_ASPECT } from "./characters";
+import { getCloud, getEmoji, getGround, getSky, getSprite, getStars, getStuds, SPRITE_ASPECT } from "./characters";
 import { PropView, Toon, type PropCtx } from "./Props";
 import { HAND, LowPolyBody } from "./LowPoly";
 import { col, GROUND_COLOR, resolveStyle, setStyle, style } from "./style";
@@ -164,7 +164,10 @@ export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: n
   const time: TimeOfDay = scene.time ?? set?.time ?? "day";
   const base = LOOKS[time] ?? LOOKS.day;
   const skyPair = st.sky?.[time];
-  const look = { ...base, top: skyPair?.[0] ?? base.top, horizon: skyPair?.[1] ?? base.horizon, tint: st.evenLight ? "#FFFFFF" : base.tint };
+  const space = scene.space ?? set?.space ?? false;
+  const look = space
+    ? { ...base, top: "#020208", horizon: "#0A1230", sunI: 0.5, ambI: 0.55, tint: st.evenLight ? "#FFFFFF" : base.tint, cloud: 0 }
+    : { ...base, top: skyPair?.[0] ?? base.top, horizon: skyPair?.[1] ?? base.horizon, tint: st.evenLight ? "#FFFFFF" : base.tint };
   const px = st.pixel > 1 ? Math.round(st.pixel) : 1;
   const ground = scene.ground ?? set?.ground ?? "grass";
   const cam = cameraPose(scene, p);
@@ -183,7 +186,7 @@ export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: n
     <div style={{ position: "absolute", left: 0, top: 0, width: WIDTH / px, height: HEIGHT / px, transform: `scale(${px})`, transformOrigin: "0 0", imageRendering: px > 1 ? "pixelated" : "auto" }}>
     <ThreeCanvas key={px} width={WIDTH / px} height={HEIGHT / px} shadows={st.shadows} flat dpr={1} gl={{ antialias: px === 1 }} camera={{ fov: 50, near: 0.1, far: 500 }} style={{ position: "absolute", inset: 0 }}>
       <color attach="background" args={[look.horizon]} />
-      {st.fog ? <fog attach="fog" args={[look.horizon, 38, 150]} /> : null}
+      {st.fog && !space ? <fog attach="fog" args={[look.horizon, 38, 150]} /> : null}
       <Rig pos={cam.pos} look={cam.look} />
       <ambientLight color={look.amb} intensity={look.ambI} />
       <directionalLight
@@ -205,7 +208,13 @@ export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: n
         <sphereGeometry args={[300, 24, 16]} />
         <meshBasicMaterial map={getSky(look.top, look.horizon)} side={THREE.BackSide} fog={false} depthWrite={false} toneMapped={false} />
       </mesh>
-      {(st.clouds ? CLOUDS : []).map(([cx, cy, cz, s], i) => {
+      {space ? (
+        <mesh rotation={[0, drift * 0.01, 0]}>
+          <sphereGeometry args={[280, 24, 16]} />
+          <meshBasicMaterial map={getStars()} side={THREE.BackSide} transparent fog={false} depthWrite={false} toneMapped={false} />
+        </mesh>
+      ) : null}
+      {(!space && st.clouds ? CLOUDS : []).map(([cx, cy, cz, s], i) => {
         const x = ((cx + drift + 150) % 300) - 150;
         return (
           <mesh key={i} position={[x, cy, cz]} rotation={[0, Math.atan2(cam.pos[0] - x, cam.pos[2] - cz), 0]}>
@@ -214,11 +223,13 @@ export const World: React.FC<{ story: Story; scene: SceneSpec; t: number; dur: n
           </mesh>
         );
       })}
-      {time === "night" ? <mesh position={[-40, 60, -160]}><circleGeometry args={[9, 32]} /><meshBasicMaterial color="#F4F1D8" fog={false} toneMapped={false} /></mesh> : null}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[360, 360]} />
-        {st.ground === "studs" ? <meshStandardMaterial map={getStuds(st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A"))} roughness={0.35} /> : st.ground === "plain" ? (st.props === "flat" ? <meshBasicMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} toneMapped={false} /> : <meshStandardMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} roughness={1} />) : <meshStandardMaterial map={getGround(ground)} roughness={1} />}
-      </mesh>
+      {time === "night" && !space ? <mesh position={[-40, 60, -160]}><circleGeometry args={[9, 32]} /><meshBasicMaterial color="#F4F1D8" fog={false} toneMapped={false} /></mesh> : null}
+      {!space ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <planeGeometry args={[360, 360]} />
+          {st.ground === "studs" ? <meshStandardMaterial map={getStuds(st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A"))} roughness={0.35} /> : st.ground === "plain" ? (st.props === "flat" ? <meshBasicMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} toneMapped={false} /> : <meshStandardMaterial color={st.groundColor ?? col(GROUND_COLOR[ground] ?? "#7CC65A")} roughness={1} />) : <meshStandardMaterial map={getGround(ground)} roughness={1} />}
+        </mesh>
+      ) : null}
       {props.map((q, i) => <PropView key={`${scene.set ?? ""}-${i}-${q.type}`} q={q} ctx={ctx} />)}
       {(scene.actors ?? []).map((a, i) => <Actor key={`${a.who}-${i}`} a={a} story={story} t={t} p={p} speaking={speaking} yawAt={yawAt} leanAt={leanAt} tint={look.tint} index={i} />)}
     </ThreeCanvas>

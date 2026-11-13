@@ -39,11 +39,11 @@ The first run copies the project next to you and does an `npm install`, so give 
 
 Videos come out at 80 to 90 seconds unless you ask for shorter. 90 is the ceiling.
 
-## Fourteen looks, or make your own
+## Fifteen looks, or make your own
 
 ![the same scene in five styles](docs/styles.jpg)
 
-Same story, one word changed. Top row: `toon`, `paper`, `whiteboard`, `lineart`, `chalkboard`, `gold`, `comic`. Bottom row: `flatvector`, `pixel`, `ps2`, `lowpoly`, `cgi`, `clay`, `bricks`.
+Same story, one word changed. Top row: `toon`, `paper`, `whiteboard`, `lineart`, `chalkboard`, `gold`, `comic`. Bottom row: `flatvector`, `pixel`, `ps2`, `lowpoly`, `cgi`, `clay`, `bricks`. And `orbit`: a dark, neon-lit look for tech, AI and space stories, with real outer-space scenes.
 
 ```json
 "style": "whiteboard"

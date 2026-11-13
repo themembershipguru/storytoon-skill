@@ -2,7 +2,7 @@
 // and a dark outline, so it matches the hand-drawn characters.
 import React from "react";
 import * as THREE from "three";
-import { getEmoji, getTextTexture } from "./characters";
+import { getEarth, getEmoji, getStars, getTextTexture } from "./characters";
 import { col, style } from "./style";
 import type { PropSpec, TimeOfDay } from "./types";
 
@@ -288,6 +288,123 @@ const Pond: React.FC<{ q: PropSpec; ctx: PropCtx }> = ({ q, ctx }) => {
   );
 };
 
+/** A tall lattice launch tower: four corner legs, cross braces, a blinking light on top. */
+const LaunchTower: React.FC<{ q: PropSpec; ctx: PropCtx }> = ({ q, ctx }) => {
+  const h = q.h ?? 14, w = q.w ?? 2.2;
+  const steel = q.color ?? "#C7CED8";
+  const legs: [number, number][] = [[-w / 2, -w / 2], [w / 2, -w / 2], [-w / 2, w / 2], [w / 2, w / 2]];
+  const rungs = Math.max(2, Math.floor(h / 2.2));
+  const blink = Math.sin(ctx.t * 4) > 0.3;
+  return (
+    <>
+      {legs.map(([x, z], i) => <Box key={i} s={[0.16, h, 0.16]} p={[x, h / 2, z]} c={steel} o={0.02} />)}
+      {Array.from({ length: rungs }).map((_, i) => {
+        const y = ((i + 1) * h) / (rungs + 1);
+        return (
+          <group key={i}>
+            <Box s={[w + 0.16, 0.1, 0.1]} p={[0, y, -w / 2]} c={steel} o={0.02} />
+            <Box s={[w + 0.16, 0.1, 0.1]} p={[0, y, w / 2]} c={steel} o={0.02} />
+            <Box s={[0.1, 0.1, w + 0.16]} p={[-w / 2, y, 0]} c={steel} o={0.02} />
+            <Box s={[0.1, 0.1, w + 0.16]} p={[w / 2, y, 0]} c={steel} o={0.02} />
+          </group>
+        );
+      })}
+      <Box s={[w * 0.7, 0.6, w * 0.7]} p={[0, h * 0.42, 0]} c={q.color2 ?? "#8A93A3"} o={0.02} />
+      <mesh position={[0, h + 0.18, 0]}>
+        <sphereGeometry args={[0.16, 10, 8]} />
+        <meshBasicMaterial color={blink ? "#FF5B4D" : "#6B1810"} toneMapped={false} />
+      </mesh>
+      {blink ? <pointLight position={[0, h + 0.18, 0]} color="#FF5B4D" intensity={3} distance={6} /> : null}
+    </>
+  );
+};
+
+/** A rocket on the pad: body, nose cone, fins, and an animated exhaust flame. */
+const Rocket: React.FC<{ q: PropSpec; ctx: PropCtx }> = ({ q, ctx }) => {
+  const h = q.h ?? 6, r = (q.w ?? 1.1) / 2;
+  const body = q.color ?? "#E7EBF2";
+  const flameOn = q.flame !== false;
+  const fl = 1 + Math.sin(ctx.t * 20) * 0.12;
+  return (
+    <>
+      <Shape geo={<cylinderGeometry args={[r, r, h, 16]} />} c={body} p={[0, h / 2, 0]} o={0.03} />
+      <Shape geo={<coneGeometry args={[r, h * 0.28, 16]} />} c={q.color2 ?? "#D9534F"} p={[0, h + h * 0.14, 0]} o={0.03} />
+      {[0, 1, 2].map((i) => (
+        <Shape key={i} geo={<boxGeometry args={[0.6, 0.06, 1.1]} />} c={q.color2 ?? "#D9534F"} p={[Math.cos((i * Math.PI * 2) / 3) * (r + 0.28), 0.5, Math.sin((i * Math.PI * 2) / 3) * (r + 0.28)]} r={[0, (i * Math.PI * 2) / 3, 0]} o={0.02} />
+      ))}
+      {Array.from({ length: Math.max(1, Math.floor(h / 1.4)) }).map((_, i) => (
+        <Shape key={i} geo={<ringGeometry args={[r * 1.001, r * 1.08, 24]} />} c="#9AA6B8" p={[0, 0.7 + i * 1.4, 0]} r={[Math.PI / 2, 0, 0]} o={0} />
+      ))}
+      {flameOn ? (
+        <>
+          <mesh position={[0, -0.55 * fl, 0]} scale={[1, fl, 1]}><coneGeometry args={[r * 0.55, 1.5, 12]} /><meshBasicMaterial color="#5BB8FF" toneMapped={false} /></mesh>
+          <mesh position={[0, -0.3 * fl, 0]} scale={[1, fl, 1]}><coneGeometry args={[r * 0.3, 0.8, 12]} /><meshBasicMaterial color="#FFFFFF" toneMapped={false} /></mesh>
+          <pointLight position={[0, -0.3, 0]} color="#8FD2FF" intensity={10 * fl} distance={9} />
+        </>
+      ) : null}
+    </>
+  );
+};
+
+/** A rack of glowing server units; the status lights blink out of sync. */
+const Servers: React.FC<{ q: PropSpec; ctx: PropCtx }> = ({ q, ctx }) => {
+  const cols = q.count ?? 6, w = q.w ?? 0.62, h = q.h ?? 2.1;
+  const body = q.color ?? "#232B3A";
+  return (
+    <>
+      {Array.from({ length: cols }).map((_, i) => {
+        const x = (i - (cols - 1) / 2) * (w + 0.1);
+        const lights = Array.from({ length: 5 }).map((__, j) => Math.sin(ctx.t * 3 + i * 1.7 + j * 2.3) > 0.6);
+        return (
+          <group key={i} position={[x, 0, 0]}>
+            <Box s={[w, h, w]} p={[0, h / 2, 0]} c={body} o={0.025} />
+            {lights.map((on, j) => (
+              <mesh key={j} position={[0, h * 0.18 + j * (h * 0.14), w / 2 + 0.01]}>
+                <boxGeometry args={[w * 0.5, 0.04, 0.02]} />
+                <meshBasicMaterial color={on ? "#4FE0FF" : "#154050"} toneMapped={false} />
+              </mesh>
+            ))}
+          </group>
+        );
+      })}
+    </>
+  );
+};
+
+/** A rotating wireframe globe with orbit rings: a hologram display. */
+const Hologram: React.FC<{ q: PropSpec; ctx: PropCtx }> = ({ q, ctx }) => {
+  const r = (q.w ?? 1.6) / 2;
+  const c = q.color ?? "#4FE0FF";
+  const spin = ctx.t * 0.6;
+  return (
+    <group rotation={[0.3, spin, 0]}>
+      <mesh><icosahedronGeometry args={[r, 1]} /><meshBasicMaterial color={c} wireframe transparent opacity={0.85} toneMapped={false} /></mesh>
+      <mesh rotation={[Math.PI / 2.4, 0, 0]}><torusGeometry args={[r * 1.35, 0.012, 8, 48]} /><meshBasicMaterial color={c} transparent opacity={0.65} toneMapped={false} /></mesh>
+      <mesh rotation={[Math.PI / 2.4, 0, Math.PI / 2]}><torusGeometry args={[r * 1.55, 0.012, 8, 48]} /><meshBasicMaterial color={q.color2 ?? "#FFE066"} transparent opacity={0.55} toneMapped={false} /></mesh>
+      <pointLight color={c} intensity={2.5} distance={5} />
+    </group>
+  );
+};
+
+/** A full-colour Earth sphere, slowly turning; for space shots. */
+const Earth3D: React.FC<{ q: PropSpec; ctx: PropCtx }> = ({ q, ctx }) => {
+  const r = (q.w ?? 4) / 2;
+  return (
+    <group rotation={[0.1, ctx.t * 0.05, 0]}>
+      <mesh><sphereGeometry args={[r, 48, 32]} /><meshStandardMaterial map={getEarth()} roughness={0.75} /></mesh>
+      <mesh scale={1.04}><sphereGeometry args={[r, 32, 24]} /><meshBasicMaterial color="#6FB4FF" transparent opacity={0.14} side={THREE.BackSide} toneMapped={false} /></mesh>
+    </group>
+  );
+};
+
+/** A flat backdrop panel, for simple indoor walls behind an office or lab scene. */
+const Wall: React.FC<{ q: PropSpec }> = ({ q }) => (
+  <mesh position={[0, (q.h ?? 5) / 2, 0]}>
+    <planeGeometry args={[q.w ?? 14, q.h ?? 5]} />
+    <meshBasicMaterial color={col(q.color ?? "#1B2436")} toneMapped={false} side={THREE.DoubleSide} />
+  </mesh>
+);
+
 const one = (q: PropSpec, ctx: PropCtx): React.ReactNode => {
   switch (q.type) {
     case "house": return <House q={q} />;
@@ -314,6 +431,12 @@ const one = (q: PropSpec, ctx: PropCtx): React.ReactNode => {
     case "ball": return <Shape geo={<sphereGeometry args={[(q.w ?? 1) / 2, 24, 16]} />} c={q.color ?? "#E2574C"} p={[0, (q.w ?? 1) / 2, 0]} o={0.04} />;
     case "pillar": return <Shape geo={<cylinderGeometry args={[(q.w ?? 0.6) / 2, (q.w ?? 0.6) / 2, q.h ?? 3, 16]} />} c={q.color ?? "#E8E2D6"} p={[0, (q.h ?? 3) / 2, 0]} o={0.04} />;
     case "emoji": return <EmojiCard q={q} ctx={ctx} />;
+    case "launchtower": return <LaunchTower q={q} ctx={ctx} />;
+    case "rocket": return <Rocket q={q} ctx={ctx} />;
+    case "servers": return <Servers q={q} ctx={ctx} />;
+    case "hologram": return <Hologram q={q} ctx={ctx} />;
+    case "earth3d": return <Earth3D q={q} ctx={ctx} />;
+    case "wall": return <Wall q={q} />;
     default: return <Box s={[0.6, 0.6, 0.6]} p={[0, 0.3, 0]} c="#FF00FF" />; // unknown type: loud pink cube so it gets noticed in the check
   }
 };
